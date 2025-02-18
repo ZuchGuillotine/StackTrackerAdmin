@@ -1,6 +1,7 @@
 
 import { users, type User, type InsertUser } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { eq } from "drizzle-orm";
 import postgres from "postgres";
 
 export interface IStorage {
@@ -27,7 +28,7 @@ export class DbStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(users.username.eq(username));
+    const result = await this.db.select().from(users).where(eq(users.username, username));
     return result[0];
   }
 
