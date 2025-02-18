@@ -1,4 +1,3 @@
-<replit_final_file>
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
@@ -23,11 +22,8 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
+export const insertUserSchema = createInsertSchema(users);
+export const selectUserSchema = createSelectSchema(users);
 export const insertBlogPostSchema = createInsertSchema(blogPosts);
 export const selectBlogPostSchema = createSelectSchema(blogPosts);
 
@@ -40,8 +36,8 @@ export const referenceData = pgTable("reference_data", {
 
 export const insertReferenceDataSchema = createInsertSchema(referenceData);
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type ReferenceData = typeof referenceData.$inferSelect;
