@@ -1,4 +1,3 @@
-
 import { users, type User, type InsertUser } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
@@ -8,6 +7,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUserByAdminStatus(isAdmin: boolean): Promise<User[]>; // Added function
 }
 
 export class DbStorage implements IStorage {
@@ -35,6 +35,11 @@ export class DbStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await this.db.insert(users).values(insertUser).returning();
     return result[0];
+  }
+
+  async getUserByAdminStatus(isAdmin: boolean): Promise<User[]> { // Added function implementation
+    const result = await this.db.select().from(users).where(users.isAdmin.eq(isAdmin));
+    return result;
   }
 }
 
