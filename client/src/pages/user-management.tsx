@@ -33,7 +33,7 @@ export default function UserManagement() {
                   <TableRow>
                     <TableHead>ID</TableHead>
                     <TableHead>Username</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Admin</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -42,8 +42,8 @@ export default function UserManagement() {
                       <TableCell>{user.id}</TableCell>
                       <TableCell>{user.username}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
-                          {user.role}
+                        <Badge variant={user.isAdmin ? 'destructive' : 'secondary'}>
+                          {user.isAdmin ? 'Admin' : 'User'}
                         </Badge>
                       </TableCell>
                     </TableRow>

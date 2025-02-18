@@ -47,7 +47,7 @@ export function setupAuth(app: Express) {
       if (!user || !(await comparePasswords(password, user.password))) {
         return done(null, false);
       } 
-      if (user.role !== 'admin') {
+      if (!user.isAdmin) {
         return done(null, false, { message: 'Insufficient privileges' });
       }
       return done(null, user);
