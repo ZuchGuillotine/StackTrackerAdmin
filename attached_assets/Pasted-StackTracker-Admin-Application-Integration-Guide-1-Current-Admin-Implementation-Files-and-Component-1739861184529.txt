@@ -1,0 +1,123 @@
+StackTracker Admin Application Integration Guide
+1. Current Admin Implementation
+Files and Components
+Admin Dashboard Layout
+client/src/pages/admin/index.tsx: Main admin dashboard with navigation cards
+client/src/components/header.tsx: Navigation header with admin-specific menu items
+Blog Management
+client/src/pages/admin/blog.tsx: Blog post CRUD interface
+Current features:
+Post creation/editing with title, excerpt, content
+Thumbnail URL support
+Publishing workflow
+SEO-friendly slug generation
+Delete confirmation dialogs
+Supplement Reference Management
+client/src/pages/admin/supplements.tsx: Supplement reference database management
+Features:
+Add/edit supplements with name, category, alternative names
+Description and source tracking
+Batch operations support
+Database Schema
+Key tables in db/schema.ts:
+
+// Blog Posts
+blogPosts: {
+  id: serial('id').primaryKey(),
+  title: varchar('title').notNull(),
+  slug: varchar('slug').notNull().unique(),
+  content: text('content').notNull(),
+  excerpt: text('excerpt'),
+  thumbnailUrl: varchar('thumbnail_url'),
+  publishedAt: timestamp('published_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at')
+}
+// Supplement Reference
+supplementReference: {
+  id: serial('id').primaryKey(),
+  name: varchar('name').notNull(),
+  category: varchar('category'),
+  alternativeNames: json('alternative_names').$type<string[]>(),
+  description: text('description'),
+  source: varchar('source'),
+  sourceUrl: varchar('source_url'),
+  createdAt: timestamp('created_at').defaultNow()
+}
+2. CORS Setup and Cross-Origin Communication
+Current CORS Configuration
+The main application's CORS setup in server/index.ts allows requests from the admin application:
+
+app.use(cors({
+  origin: process.env.ADMIN_APP_URL,
+  credentials: true
+}));
+Required Admin App CORS Setup
+The admin application should have similar CORS configuration:
+
+app.use(cors({
+  origin: process.env.MAIN_APP_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+Database Access
+The admin application should use the same NeonDB instance with elevated privileges. Both applications share the same database but with different access patterns.
+
+3. Required Environment Variables
+Main Application
+ADMIN_APP_URL=https://your-admin-repl.repl.co
+DATABASE_URL=postgresql://user:pass@neon.db/database
+SESSION_SECRET=your-session-secret
+Admin Application
+MAIN_APP_URL=https://your-main-repl.repl.co
+DATABASE_URL=postgresql://admin:pass@neon.db/database
+ADMIN_SESSION_SECRET=your-admin-session-secret
+JWT_SECRET=your-jwt-secret
+4. Desired Features
+Blog Management
+Rich text editor integration
+Media upload capabilities
+Draft/publish workflow
+Category and tag management
+SEO metadata management
+Analytics tracking
+Supplement Reference Management
+Bulk import/export
+Version history
+Audit logging
+Validation rules
+Scientific reference linking
+User Management
+User role management
+Access control lists
+Activity logging
+Account status management
+Login attempt monitoring
+Analytics Dashboard
+User engagement metrics
+Supplement tracking statistics
+Blog post performance
+System health monitoring
+Export capabilities
+5. Additional Implementation Notes
+Authentication Flow
+Implement JWT-based authentication between applications
+Use secure HTTP-only cookies
+Implement CSRF protection
+Rate limiting on sensitive endpoints
+Security Considerations
+Implement IP whitelisting for admin access
+Add audit logging for all admin actions
+Regular security scanning
+Automated backup system
+Performance
+Implement caching for frequently accessed data
+Use connection pooling for database
+Implement request queuing for heavy operations
+Monitoring
+Error tracking integration
+Performance monitoring
+User action logging
+System health checks
+This document provides a foundation for building the admin application. The existing application's admin functionality should be migrated to the new admin application while maintaining backward compatibility during the transition.
