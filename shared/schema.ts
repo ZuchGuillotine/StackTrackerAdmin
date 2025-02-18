@@ -1,5 +1,7 @@
+<replit_final_file>
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 
 export const users = pgTable("users", {
@@ -12,11 +14,22 @@ export const users = pgTable("users", {
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
+  excerpt: text("excerpt").notNull(),
   content: text("content").notNull(),
-  published: boolean("published").notNull().default(false),
-  authorId: integer("author_id").references(() => users.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  thumbnailUrl: text("thumbnail_url").notNull(),
+  publishedAt: timestamp("published_at").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts);
+export const selectBlogPostSchema = createSelectSchema(blogPosts);
 
 export const referenceData = pgTable("reference_data", {
   id: serial("id").primaryKey(),
@@ -25,20 +38,10 @@ export const referenceData = pgTable("reference_data", {
   value: jsonb("value").notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export const insertBlogPostSchema = createInsertSchema(blogPosts).pick({
-  title: true,
-  content: true,
-  published: true,
-});
-
 export const insertReferenceDataSchema = createInsertSchema(referenceData);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type ReferenceData = typeof referenceData.$inferSelect;
