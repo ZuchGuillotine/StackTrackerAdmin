@@ -228,24 +228,24 @@ export default function BlogManagement() {
             </DialogContent>
           </Dialog>
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Blog Post</AlertDialogTitle>
-            </AlertDialogHeader>
             <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Blog Post</AlertDialogTitle>
+              </AlertDialogHeader>
               <AlertDialogDescription>
                 Are you sure you want to delete this blog post? This action cannot be undone.
               </AlertDialogDescription>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    deletePost.mutate(postToDelete);
+                  }}
+                  >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
             </AlertDialogContent>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  deletePost.mutate(postToDelete);
-                }}
-                >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
           </AlertDialog>
         </div>
 

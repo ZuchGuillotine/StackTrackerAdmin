@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { insertUserSchema } from "@shared/schema";
 import type { InsertUser } from "@shared/schema";
+import { useEffect } from 'react';
 
 export default function AuthPage() {
   const [, setLocation] = useLocation();
@@ -21,10 +22,11 @@ export default function AuthPage() {
     }
   });
 
-  if (user) {
-    setLocation("/");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen flex">
