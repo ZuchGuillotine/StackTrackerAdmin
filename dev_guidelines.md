@@ -85,4 +85,38 @@ JWT_SECRET=your-jwt-secret
 6. Implement monitoring and analytics
 7. Deploy and test cross-communication
 
+## Cross-Application Integration Workflow
+
+When integrating admin functionality with the main application's features (blogs, users, references, etc.), follow this workflow:
+
+1. Schema Integration
+   - Copy and validate shared schema definitions from main application
+   - Ensure all table structures and types are properly imported
+   - Verify schema compatibility between applications
+
+2. Frontend Components
+   - Import and adapt relevant UI components
+   - Implement proper state management and data fetching
+   - Handle component lifecycle and side effects appropriately
+   - Follow React best practices for controlled components
+
+3. API Integration
+   - Implement corresponding API endpoints in server/routes.ts
+   - Add necessary storage methods in server/storage.ts
+   - Ensure proper error handling and status codes
+   - Maintain consistent authentication checks
+
+4. Database Access
+   - Verify database connection and permissions
+   - Implement proper database operations (CRUD)
+   - Handle database constraints and relationships
+   - Test data integrity across applications
+
+5. Common Issues to Watch
+   - React state updates during render (use useEffect)
+   - Component hierarchy in dialogs and modals
+   - Proper typing for all database operations
+   - Authentication state management
+   - Cross-origin resource sharing (CORS)
+
 This document serves as a living guide and should be updated as the implementation progresses.
