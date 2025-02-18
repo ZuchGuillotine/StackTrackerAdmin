@@ -1,7 +1,7 @@
-import { users, type User, type InsertUser } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
+import { users, type User, type InsertUser } from "@shared/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -10,27 +10,31 @@ export interface IStorage {
 }
 
 export class DbStorage implements IStorage {
-  private db: any; // Replace with your database client
+  private db;
 
   constructor() {
-    // Initialize database connection using DATABASE_URL
-    this.db = createDbConnection(process.env.DATABASE_URL);
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error("DATABASE_URL environment variable is required");
+    }
+    const client = postgres(connectionString);
+    this.db = drizzle(client);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return await this.db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const result = await this.db.select().from(users).where(users.id.eq(id));
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return await this.db.query('SELECT * FROM users WHERE username = $1', [username]);
+    const result = await this.db.select().from(users).where(users.username.eq(username));
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const result = await this.db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DbStorage();
