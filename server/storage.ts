@@ -10,6 +10,9 @@ export interface IStorage {
   getUserByAdminStatus(isAdmin: boolean): Promise<User[]>; // Added function
 }
 
+import { blogPosts, type BlogPost } from "@shared/schema";
+import { desc } from "drizzle-orm";
+
 export class DbStorage implements IStorage {
   private db;
 
@@ -20,6 +23,10 @@ export class DbStorage implements IStorage {
     }
     const client = postgres(connectionString);
     this.db = drizzle(client);
+  }
+
+  async getBlogPosts(): Promise<BlogPost[]> {
+    return await this.db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
 
   async getUser(id: number): Promise<User | undefined> {
