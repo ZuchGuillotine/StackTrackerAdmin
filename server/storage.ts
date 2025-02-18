@@ -9,23 +9,20 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  currentId: number;
+export class DbStorage implements IStorage {
+  private db: any; // Replace with your database client
 
   constructor() {
-    this.users = new Map();
-    this.currentId = 1;
+    // Initialize database connection using DATABASE_URL
+    this.db = createDbConnection(process.env.DATABASE_URL);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    return await this.db.query('SELECT * FROM users WHERE id = $1', [id]);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return await this.db.query('SELECT * FROM users WHERE username = $1', [username]);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

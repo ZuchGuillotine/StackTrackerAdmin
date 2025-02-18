@@ -15,6 +15,10 @@ export default function AuthPage() {
 
   const loginForm = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      username: '',
+      password: ''
+    }
   });
 
   if (user) {
