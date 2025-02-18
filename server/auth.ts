@@ -46,9 +46,11 @@ export function setupAuth(app: Express) {
       const user = await storage.getUserByUsername(username);
       if (!user || !(await comparePasswords(password, user.password))) {
         return done(null, false);
-      } else {
-        return done(null, user);
+      } 
+      if (user.role !== 'admin') {
+        return done(null, false, { message: 'Insufficient privileges' });
       }
+      return done(null, user);
     }),
   );
 

@@ -42,7 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message === 'Insufficient privileges' 
+          ? 'Only admin users can access this dashboard' 
+          : 'Invalid username or password',
         variant: "destructive",
       });
     },
