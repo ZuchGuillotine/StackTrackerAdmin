@@ -269,18 +269,16 @@ export default function AdminBlogPosts() {
                     Preview
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingPost(post);
-                    setOpen(true);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
+                <Link href={`/blog-editor/${post.id}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   size="sm"
