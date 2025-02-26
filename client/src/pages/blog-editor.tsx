@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useParams, useNavigate } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Editor } from "@tinymce/tinymce-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [content, setContent] = React.useState("");
   const [title, setTitle] = React.useState("");
