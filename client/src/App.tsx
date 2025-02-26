@@ -9,6 +9,7 @@ import Dashboard from "@/pages/dashboard";
 import BlogManagement from "@/pages/blog-management";
 import UserManagement from "@/pages/user-management";
 import ReferenceManagement from "@/pages/reference-management";
+import BlogEditor from "@/pages/blog-editor";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/blog" component={BlogManagement} />
+      <ProtectedRoute path="/blog-editor/:id" component={BlogEditor} />
       <ProtectedRoute path="/users" component={UserManagement} />
       <ProtectedRoute path="/reference" component={ReferenceManagement} />
       <Route component={NotFound} />
