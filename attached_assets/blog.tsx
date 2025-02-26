@@ -171,12 +171,10 @@ export default function AdminBlogPosts() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Manage Blog Posts</h1>
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingPost(null)}>
+            <Button onClick={() => navigate('/blog-editor/new')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Post
               </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
                 <DialogTitle>
@@ -269,16 +267,15 @@ export default function AdminBlogPosts() {
                     Preview
                   </Button>
                 </Link>
-                <Link href={`/blog-editor/${post.id}`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => navigate(`/blog-editor/${post.id}`)}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

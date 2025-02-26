@@ -21,11 +21,12 @@ export default function BlogEditor() {
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/blog/${id}`],
     queryFn: async () => {
+      if (id === 'new') return null;
       const res = await fetch(`/api/blog/${id}`);
       if (!res.ok) throw new Error('Failed to fetch post');
       return res.json();
     },
-    enabled: !!id
+    enabled: !!id && id !== 'new'
   });
 
   React.useEffect(() => {
