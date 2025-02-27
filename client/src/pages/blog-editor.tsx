@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Editor } from "@tinymce/tinymce-react";
@@ -11,29 +11,23 @@ import { Toggle } from "@/components/ui/toggle";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
+  // IMPORTANT: Fix for params extraction
   const params = useParams<{ id: string }>();
   const id = params?.id;
+  console.log("PARAMS DEBUG:", params, "ID:", id);
   const isNewPost = id === 'new';
+
   const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // State for form fields
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [content, setContent] = useState("");
   const [useHtmlEditor, setUseHtmlEditor] = useState(false);
+  const [editorKey, setEditorKey] = useState(Date.now()); // Force re-render when needed
 
-  // Editor references and state
-  const editorRef = useRef<any>(null);
-  const [editorInitialized, setEditorInitialized] = useState(false);
-  const [postLoaded, setPostLoaded] = useState(false);
-
-  // Flag to control when to initialize the editor with content
-  const [shouldSetEditorContent, setShouldSetEditorContent] = useState(false);
-
-  // Fetch TinyMCE config
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
     queryFn: async () => {
@@ -43,16 +37,18 @@ export default function BlogEditor() {
     }
   });
 
-  // Fetch post data if editing existing post
+  // FIXED: Properly fetch post data with correct parameter handling
   const { data: post, isLoading: isLoadingPost } = useQuery<BlogPost>({
     queryKey: ['/api/blog', id],
     queryFn: async () => {
       if (isNewPost) return null;
 
+      // IMPORTANT: Log actual ID being used
       console.log(`Fetching post with ID: ${id}`);
+
       const res = await fetch(`/api/blog/${id}`, { 
         credentials: 'include',
-        headers: { 'Cache-Control': 'no-cache' }
+        cache: 'no-cache' // Modern fetch API approach
       });
 
       if (!res.ok) {
@@ -65,93 +61,32 @@ export default function BlogEditor() {
       console.log("Received post data:", postData);
       return postData;
     },
-    enabled: !isNewPost,
-    retry: 1,
+    enabled: !isNewPost && !!id, // Only run when we have a non-null ID and it's not a new post
     staleTime: 0
   });
 
-  // When post data is loaded, update form fields
+  // Update form when post data is loaded
   useEffect(() => {
-    if (post && !postLoaded) {
+    if (post) {
       console.log("Setting form data from post:", post);
       setTitle(post.title || "");
       setExcerpt(post.excerpt || "");
       setThumbnailUrl(post.thumbnailUrl || "");
       setContent(post.content || "");
-      setPostLoaded(true);
-
-      // Signal that we should update the editor content once it's ready
-      if (editorInitialized && !useHtmlEditor) {
-        setShouldSetEditorContent(true);
-      }
+      // Force re-render TinyMCE editor with new content
+      setEditorKey(Date.now());
     }
-  }, [post, postLoaded, editorInitialized, useHtmlEditor]);
+  }, [post]);
 
-  // When the editor is initialized, mark it as ready
-  const handleEditorInit = (evt: any, editor: any) => {
-    console.log("TinyMCE editor initialized");
-    editorRef.current = editor;
-    setEditorInitialized(true);
-
-    // If post data was already loaded, set editor content
-    if (postLoaded && !useHtmlEditor) {
-      setShouldSetEditorContent(true);
-    }
-  };
-
-  // Handle updating editor content when both editor is ready and post is loaded
-  useEffect(() => {
-    if (shouldSetEditorContent && editorRef.current && content) {
-      console.log("Setting editor content:", content);
-      // Using setTimeout to ensure the editor is fully ready
-      setTimeout(() => {
-        try {
-          editorRef.current.setContent(content);
-          console.log("Editor content set successfully");
-        } catch (error) {
-          console.error("Error setting editor content:", error);
-        }
-        setShouldSetEditorContent(false);
-      }, 100);
-    }
-  }, [shouldSetEditorContent, content]);
-
-  // When toggling between HTML and Visual editor, ensure content stays in sync
-  useEffect(() => {
-    if (editorInitialized && editorRef.current && postLoaded) {
-      if (!useHtmlEditor) {
-        // When switching to Visual editor, set content from state
-        setShouldSetEditorContent(true);
-      } else if (useHtmlEditor && editorRef.current) {
-        // When switching to HTML editor, get content from visual editor
-        try {
-          const editorContent = editorRef.current.getContent();
-          if (editorContent && editorContent !== content) {
-            setContent(editorContent);
-          }
-        } catch (error) {
-          console.error("Error getting content from editor:", error);
-        }
-      }
-    }
-  }, [useHtmlEditor, editorInitialized, postLoaded]);
-
-  // Create new post
   const createPost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
-      console.log("Creating new post with data:", data);
       const res = await fetch('/api/admin/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(data),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to create post");
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       return await res.json();
     },
     onSuccess: () => {
@@ -168,7 +103,6 @@ export default function BlogEditor() {
     }
   });
 
-  // Update existing post
   const updatePost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
       console.log(`Updating post with ID: ${id}`, data);
@@ -178,12 +112,7 @@ export default function BlogEditor() {
         credentials: 'include',
         body: JSON.stringify(data),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to update post");
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       return await res.json();
     },
     onSuccess: () => {
@@ -201,17 +130,7 @@ export default function BlogEditor() {
   });
 
   const handleSave = () => {
-    // Get content from the visual editor if that's what we're using
-    let finalContent = content;
-    if (!useHtmlEditor && editorRef.current) {
-      try {
-        finalContent = editorRef.current.getContent();
-      } catch (error) {
-        console.error("Error getting content from editor:", error);
-      }
-    }
-
-    if (!title || !finalContent) {
+    if (!title || !content) {
       toast({ 
         title: "Error", 
         description: "Title and content are required",
@@ -222,7 +141,7 @@ export default function BlogEditor() {
 
     const postData = {
       title,
-      content: finalContent,
+      content,
       excerpt: excerpt || title.substring(0, 100) + '...',
       thumbnailUrl: thumbnailUrl || `https://picsum.photos/seed/${Math.random()}/800/400`,
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -235,80 +154,47 @@ export default function BlogEditor() {
     }
   };
 
-  // Show loading state while fetching
+  // Debug panel in development
+  const DebugPanel = () => {
+    if (process.env.NODE_ENV !== 'development') return null;
+
+    return (
+      <div className="bg-yellow-100 p-4 mb-4 rounded border border-yellow-500 text-xs">
+        <h3 className="font-bold">Debug Information</h3>
+        <pre>
+          ID from params: {JSON.stringify(params, null, 2)}
+        </pre>
+        <p>ID value: {id}</p>
+        <p>Is new post: {isNewPost ? 'Yes' : 'No'}</p>
+        <p>Post data: {post ? 'Loaded' : 'Not loaded'}</p>
+        <p>Form title: {title}</p>
+        <p>Content length: {content?.length || 0} characters</p>
+        <button
+          className="mt-2 bg-blue-500 text-white px-2 py-1 rounded text-xs"
+          onClick={() => {
+            console.log("Current route params:", params);
+            console.log("Current ID:", id);
+            console.log("Post data:", post);
+            console.log("Form state:", { title, excerpt, thumbnailUrl, content });
+          }}
+        >
+          Log Debug Info
+        </button>
+      </div>
+    );
+  };
+
   if (isLoadingPost) {
     return (
       <div className="container mx-auto p-6">
         <Card className="p-6">
           <div className="flex items-center justify-center h-96">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2">Loading post data...</span>
           </div>
         </Card>
       </div>
     );
   }
-
-  // Create a debugging component
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== 'development') return null;
-    
-    return (
-      <div className="my-4 p-3 border border-yellow-500 rounded bg-yellow-50 text-xs">
-        <h3 className="font-bold mb-1">Debug Information</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p><strong>Post ID:</strong> {id}</p>
-            <p><strong>Is New Post:</strong> {isNewPost ? 'Yes' : 'No'}</p>
-            <p><strong>Editor Ready:</strong> {editorInitialized ? 'Yes' : 'No'}</p>
-            <p><strong>Post Loaded:</strong> {postLoaded ? 'Yes' : 'No'}</p>
-            <p><strong>Should Set Content:</strong> {shouldSetEditorContent ? 'Yes' : 'No'}</p>
-          </div>
-          <div>
-            <p><strong>Title:</strong> {title.substring(0, 20)}{title.length > 20 ? '...' : ''}</p>
-            <p><strong>Content Length:</strong> {content?.length || 0} chars</p>
-            <p><strong>HTML Editor:</strong> {useHtmlEditor ? 'Yes' : 'No'}</p>
-            <p><strong>Loading Config:</strong> {isLoadingConfig ? 'Yes' : 'No'}</p>
-            <p><strong>Loading Post:</strong> {isLoadingPost ? 'Yes' : 'No'}</p>
-          </div>
-        </div>
-        <div className="mt-2">
-          <button 
-            className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
-            onClick={() => {
-              console.log("Raw post data:", post);
-              console.log("Editor reference:", editorRef.current);
-              console.log("Current content state:", content);
-              if (editorRef.current) {
-                try {
-                  console.log("Editor content:", editorRef.current.getContent());
-                } catch (e) {
-                  console.error("Error getting editor content:", e);
-                }
-              }
-            }}
-          >
-            Log Debug Info
-          </button>
-          {editorRef.current && (
-            <button 
-              className="ml-2 px-2 py-1 bg-green-500 text-white rounded text-xs"
-              onClick={() => {
-                try {
-                  editorRef.current.setContent(content || "");
-                  console.log("Manually set editor content");
-                } catch (e) {
-                  console.error("Error setting editor content:", e);
-                }
-              }}
-            >
-              Force Set Content
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -355,14 +241,10 @@ export default function BlogEditor() {
             </div>
           ) : tinyMceConfig?.apiKey ? (
             <Editor
+              key={editorKey} // Key forces re-render with new content
               apiKey={tinyMceConfig.apiKey}
-              initialValue={content} // Set initial value
-              onInit={handleEditorInit}
-              onEditorChange={(newContent) => {
-                if (newContent !== content) {
-                  setContent(newContent);
-                }
-              }}
+              initialValue={content}
+              onEditorChange={(newContent) => setContent(newContent)}
               init={{
                 height: 500,
                 menubar: true,
@@ -375,8 +257,7 @@ export default function BlogEditor() {
                   'bold italic forecolor | alignleft aligncenter ' +
                   'alignright alignjustify | bullist numlist outdent indent | ' +
                   'removeformat | image media table | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                // No setup property that could interfere with initialization
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
               }}
             />
           ) : (
@@ -386,15 +267,6 @@ export default function BlogEditor() {
               </div>
             </div>
           )}
-
-          {/* Debug info - only in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-2 border border-gray-300 rounded text-xs bg-gray-50">
-              <p><strong>Debug:</strong> Post ID: {id}, Editor Ready: {editorInitialized ? 'Yes' : 'No'}, Post Loaded: {postLoaded ? 'Yes' : 'No'}</p>
-              <p>Content Length: {content?.length || 0} characters</p>
-            </div>
-          )}
-
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => navigate('/blog')}>
               Cancel
