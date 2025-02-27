@@ -33,33 +33,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get blog post by ID or slug
   app.get("/api/blog/:id", async (req, res) => {
     try {
       const idParam = req.params.id;
-      console.log(`Fetching blog post with param: ${idParam}`);
+      let post;
 
-      const id = parseInt(idParam);
-      if (!isNaN(id)) {
-        const post = await storage.getBlogPostById(id); // Assuming storage.getBlogPostById is adapted to new DB structure
-
-        if (!post) {
-          console.log(`Post with ID ${id} not found`);
-          return res.status(404).json({ error: "Post not found" });
-        }
-
-        console.log(`Found post:`, post);
-        return res.json(post);
+      // First try to parse as number for ID lookup
+      const numericId = parseInt(idParam);
+      if (!isNaN(numericId)) {
+        post = await storage.getBlogPostById(numericId);
       }
 
-      // If not a number, treat as slug
-      const post = await storage.getBlogPostBySlug(idParam); // Assuming storage.getBlogPostBySlug is adapted to new DB structure
+      // If no post found by ID, try slug lookup
+      if (!post) {
+        post = await storage.getBlogPostBySlug(idParam);
+      }
 
       if (!post) {
-        console.log(`Post with slug ${idParam} not found`);
         return res.status(404).json({ error: "Post not found" });
       }
 
-      console.log(`Found post:`, post);
       res.json(post);
     } catch (error) {
       console.error("Error fetching post:", error);
@@ -72,31 +66,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/blog", requireAuth, requireAdmin, async (req, res) => {
     try {
-      console.log("Creating new blog post with data:", req.body);
-      
-      // Add validation to ensure required fields
-      if (!req.body.title) {
-        return res.status(400).json({ error: "Title is required" });
-      }
-      if (!req.body.content) {
-        return res.status(400).json({ error: "Content is required" });
-      }
-      
-      // Ensure we have all required fields before validation
-      const blogData = {
+      const postData = {
         title: req.body.title,
         content: req.body.content,
+        excerpt: req.body.excerpt,
+        thumbnailUrl: req.body.thumbnailUrl,
         slug: req.body.slug || req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        excerpt: req.body.excerpt || req.body.title.substring(0, 100),
-        thumbnailUrl: req.body.thumbnailUrl || 'https://picsum.photos/seed/' + Math.floor(Math.random() * 1000) + '/800/400'
       };
-      
-      const post = await storage.createBlogPost(blogData);
-      console.log("Created new blog post:", post);
+
+      const post = await storage.createBlogPost(postData);
       res.status(201).json(post);
     } catch (error) {
       console.error("Error creating post:", error);
-      res.status(500).json({ error: "Failed to create post", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to create post",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
@@ -106,39 +91,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid ID format" });
       }
-      
-      console.log(`Updating blog post ${id} with data:`, req.body);
-      
-      // Add validation to ensure required fields
-      if (!req.body.title) {
-        return res.status(400).json({ error: "Title is required" });
-      }
-      if (!req.body.content) {
-        return res.status(400).json({ error: "Content is required" });
-      }
-      
-      const post = await storage.updateBlogPost(id, req.body);
+
+      const postData = {
+        title: req.body.title,
+        content: req.body.content,
+        excerpt: req.body.excerpt,
+        thumbnailUrl: req.body.thumbnailUrl,
+        slug: req.body.slug || req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      };
+
+      const post = await storage.updateBlogPost(id, postData);
       if (!post) {
-        console.log(`Post with ID ${id} not found for update`);
         return res.status(404).json({ error: "Post not found" });
       }
-      
-      console.log(`Updated blog post ${id}:`, post);
+
       res.json(post);
     } catch (error) {
       console.error("Error updating post:", error);
-      res.status(500).json({ error: "Failed to update post", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to update post",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
   app.delete("/api/admin/blog/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const success = await storage.deleteBlogPost(parseInt(req.params.id));
-      if (!success) return res.status(404).json({ error: "Post not found" });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const success = await storage.deleteBlogPost(id);
+      if (!success) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
       res.json({ message: "Post deleted successfully" });
     } catch (error) {
       console.error("Error deleting post:", error);
-      res.status(500).json({ error: "Failed to delete post" });
+      res.status(500).json({ 
+        error: "Failed to delete post",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

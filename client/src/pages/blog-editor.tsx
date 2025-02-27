@@ -12,7 +12,7 @@ import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
   const params = useParams<{ id: string }>();
-  const id = params?.id || 'new';
+  const id = params?.id;
   const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [content, setContent] = React.useState("");
@@ -24,9 +24,7 @@ export default function BlogEditor() {
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
     queryFn: async () => {
-      const res = await fetch('/api/config/tinymce', {
-        credentials: 'include'
-      });
+      const res = await fetch('/api/config/tinymce');
       if (!res.ok) throw new Error('Failed to fetch TinyMCE config');
       return res.json();
     }
@@ -37,34 +35,34 @@ export default function BlogEditor() {
     queryFn: async () => {
       if (id === 'new') return null;
 
-      try {
-        const res = await fetch(`/api/blog/${id}`, {
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch post');
+      const res = await fetch(`/api/blog/${id}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
         }
+      });
 
-        return res.json();
-      } catch (error) {
-        console.error('Error fetching post:', error);
-        throw error;
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Failed to fetch post:', errorText);
+        throw new Error(errorText);
       }
+
+      return res.json();
     },
-    enabled: id !== 'new'
+    enabled: id !== 'new',
+    retry: 1,
+    staleTime: 0
   });
 
   // Update form when post data is loaded
   React.useEffect(() => {
-    if (post) {
-      setTitle(post.title);
-      setExcerpt(post.excerpt);
-      setThumbnailUrl(post.thumbnailUrl);
-      setContent(post.content);
+    if (post && Object.keys(post).length > 0) {
+      console.log('Setting form data from post:', post);
+      setTitle(post.title || '');
+      setExcerpt(post.excerpt || '');
+      setThumbnailUrl(post.thumbnailUrl || '');
+      setContent(post.content || '');
     }
   }, [post]);
 
@@ -237,7 +235,7 @@ export default function BlogEditor() {
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button variant="outline" onClick={() => navigate('/blog-management')}>
               Cancel
             </Button>
             <Button 
@@ -247,11 +245,6 @@ export default function BlogEditor() {
               {updatePost.isPending || createPost.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
-          {(updatePost.isError || createPost.isError) && (
-            <div className="mt-4 p-4 border border-red-300 bg-red-50 text-red-700 rounded">
-              {updatePost.error?.toString() || createPost.error?.toString() || 'An error occurred while saving'}
-            </div>
-          )}
         </div>
       </Card>
     </div>
