@@ -1,4 +1,3 @@
-
 import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
@@ -49,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const parsed = insertBlogPostSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json(parsed.error);
-      
+
       const post = await storage.createBlogPost(parsed.data);
       res.status(201).json(post);
     } catch (error) {
@@ -78,6 +77,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting post:", error);
       res.status(500).json({ error: "Failed to delete post" });
     }
+  });
+
+  app.get("/api/config/tinymce", requireAuth, (req, res) => {
+    res.json({ 
+      apiKey: process.env.TINY_MCE_KEY || "" 
+    });
   });
 
   const httpServer = createServer(app);

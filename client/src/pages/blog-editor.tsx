@@ -20,6 +20,15 @@ export default function BlogEditor() {
   const [excerpt, setExcerpt] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
   const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
+  
+  const { data: tinyMceConfig } = useQuery({
+    queryKey: ['/api/config/tinymce'],
+    queryFn: async () => {
+      const res = await fetch('/api/config/tinymce');
+      if (!res.ok) return { apiKey: "" };
+      return res.json();
+    }
+  });
 
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/blog/${id}`],
@@ -109,7 +118,7 @@ export default function BlogEditor() {
             />
           ) : (
             <Editor
-              apiKey="your-tinymce-api-key"
+              apiKey={tinyMceConfig?.apiKey || ""}
               value={content}
               onEditorChange={(content) => setContent(content)}
               init={{
