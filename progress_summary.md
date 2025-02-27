@@ -28,7 +28,7 @@ The admin dashboard can now:
 ### Phase 2: Feature Implementation
 1. Blog Management (In Progress)
    - [✓] CRUD Operations
-   - [ ] Rich Text Editor
+   - [✓] Rich Text Editor (TinyMCE integration)
    - [ ] Media Management
    - [ ] SEO Tools
 
@@ -81,3 +81,6 @@ The admin dashboard can now:
 - Authentication is handled through JWT tokens
 - Development follows the professional variant theme as defined in theme.json
 - UI components are built using a component library with Tailwind CSS
+- Blog editor uses TinyMCE for rich text editing with toggle between visual and HTML modes
+- TinyMCE API key is stored in environment variables as TINY_MCE_KEY
+- Remember to add Replit development URLs (*.replit.dev or *.spock.replit.dev) to the approved domains in TinyMCE dashboard
