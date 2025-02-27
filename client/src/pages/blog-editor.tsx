@@ -12,10 +12,14 @@ import { Toggle } from "@/components/ui/toggle";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
-  // IMPORTANT: Fix for params extraction
+  // Get ID directly from URL since params aren't working
+  const [location] = useLocation();
+  const urlParts = location.split('/');
+  const id = urlParts[urlParts.length - 1];
+  
+  // Keep original params for debugging
   const params = useParams<{ id: string }>();
-  const id = params?.id;
-  console.log("PARAMS DEBUG:", params, "ID:", id);
+  console.log("PARAMS DEBUG:", params, "ID from URL:", id);
   const isNewPost = id === 'new';
 
   const [_, navigate] = useLocation();
