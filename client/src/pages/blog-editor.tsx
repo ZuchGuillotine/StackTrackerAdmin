@@ -45,17 +45,33 @@ export default function BlogEditor() {
       console.log('Fetched post data:', data);
       return data;
     },
-    enabled: !!id && id !== 'new'
+    enabled: !!id && id !== 'new',
+    refetchOnWindowFocus: false,
+    staleTime: Infinity
   });
 
   React.useEffect(() => {
     console.log('Post data received:', post);
     if (post) {
       console.log('Setting form values from post:', post);
-      setContent(post.content || '');
+      
+      // Ensure we set all the form fields with the post data
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
+      
+      // Set content last to ensure it's available for TinyMCE
+      if (post.content) {
+        console.log('Setting content to:', post.content);
+        setContent(post.content);
+        
+        // Force TinyMCE editor to update if it's already initialized
+        const editor = window.tinymce?.get('content-editor');
+        if (editor) {
+          console.log('Updating TinyMCE editor content');
+          editor.setContent(post.content);
+        }
+      }
     }
   }, [post]);
 
@@ -81,29 +97,52 @@ export default function BlogEditor() {
     }
   });
 
-  const createPost = useMutation({ // Assumed mutation for creating new posts
-    mutationFn: async (data: BlogPost) => {
-      const res = await fetch(`/api/admin/blog/`, {
+  const createPost = useMutation({
+    mutationFn: async (data: Partial<BlogPost>) => {
+      console.log('Creating new post with data:', data);
+      const res = await fetch(`/api/admin/blog`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Failed to create post:', errorText);
+        throw new Error(errorText);
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: "Success", description: "Blog post created successfully" });
       navigate('/blog-management');
+    },
+    onError: (error) => {
+      console.error('Create post error:', error);
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to create post",
+        variant: "destructive"
+      });
     }
   });
 
 
   const handleSave = () => {
+    const postData = {
+      title,
+      content,
+      excerpt,
+      thumbnailUrl,
+      published: true,
+      slug: title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    };
+    
+    console.log('Handling save, id:', id);
     if (id === 'new') {
-      createPost.mutate({ title, content, excerpt, thumbnailUrl });
+      createPost.mutate(postData);
     } else {
-      updatePost.mutate({ title, content, excerpt, thumbnailUrl });
+      updatePost.mutate(postData);
     }
   };
 
@@ -159,17 +198,21 @@ export default function BlogEditor() {
             </div>
           ) : tinyMceConfig?.apiKey ? (
             <Editor
+              id="content-editor"
               apiKey={tinyMceConfig.apiKey}
-              initialValue={content}
-              value={content}
-              onEditorChange={(newContent) => setContent(newContent)}
+              initialValue={content || ''}
+              value={content || ''}
+              onEditorChange={(newContent) => {
+                console.log("Editor content changed:", newContent);
+                setContent(newContent);
+              }}
               init={{
                 height: 500,
                 menubar: true,
                 plugins: [
                   'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                   'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                  'insertdatetime', 'media', 'table', 'help', 'wordcount'
                 ],
                 toolbar: 'undo redo | blocks | ' +
                   'bold italic forecolor | alignleft aligncenter ' +
@@ -178,6 +221,7 @@ export default function BlogEditor() {
                 content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
                 setup: function(editor) {
                   editor.on('init', function() {
+                    console.log("TinyMCE initialized, setting content:", content);
                     if (content) {
                       editor.setContent(content);
                     }
