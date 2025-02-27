@@ -50,16 +50,12 @@ export default function BlogEditor() {
 
   React.useEffect(() => {
     console.log('Post data received:', post);
-  }, [post]);
-
-  React.useEffect(() => {
     if (post) {
       console.log('Setting form values from post:', post);
       setContent(post.content || '');
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
-      console.log('Form values set:', { content, title, excerpt, thumbnailUrl });
     }
   }, [post]);
 
@@ -159,22 +155,29 @@ export default function BlogEditor() {
           ) : tinyMceConfig?.apiKey ? (
             <Editor
               apiKey={tinyMceConfig.apiKey}
+              initialValue={content}
               value={content}
-              onEditorChange={(content) => setContent(content)}
+              onEditorChange={(newContent) => setContent(newContent)}
               init={{
                 height: 500,
                 menubar: true,
                 plugins: [
                   'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                   'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-                  'toc'
+                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
                 ],
                 toolbar: 'undo redo | blocks | ' +
                   'bold italic forecolor | alignleft aligncenter ' +
                   'alignright alignjustify | bullist numlist outdent indent | ' +
-                  'removeformat | image media table | toc | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                  'removeformat | image media table | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                setup: function(editor) {
+                  editor.on('init', function() {
+                    if (content) {
+                      editor.setContent(content);
+                    }
+                  });
+                }
               }}
             />
           ) : (
