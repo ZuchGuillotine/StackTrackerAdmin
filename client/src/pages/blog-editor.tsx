@@ -12,7 +12,7 @@ import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
   const params = useParams<{ id: string }>();
-  const id = params?.id;
+  const id = params?.id || 'new';
   const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [content, setContent] = React.useState("");
@@ -49,7 +49,12 @@ export default function BlogEditor() {
       console.log(`Fetching post with ID: ${numericId}`);
       
       // Use the correct endpoint for fetching a post by ID
-      const res = await fetch(`/api/blog/${numericId}`);
+      const res = await fetch(`/api/blog/${numericId}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       
       if (!res.ok) {
         const errorText = await res.text();
@@ -141,6 +146,11 @@ export default function BlogEditor() {
     mutationFn: async (data: Partial<BlogPost>) => {
       console.log('Creating new post with data:', data);
       
+      // Make sure we have a valid slug
+      if (!data.slug && data.title) {
+        data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      }
+      
       const res = await fetch(`/api/admin/blog`, {
         method: 'POST',
         headers: { 
@@ -175,13 +185,22 @@ export default function BlogEditor() {
   });
 
   const handleSave = () => {
+    // Ensure we have all required fields
+    if (!title || !content) {
+      toast({ 
+        title: "Error", 
+        description: "Title and content are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const postData = {
       title,
       content,
-      excerpt,
-      thumbnailUrl,
-      published: true,
-      slug: title?.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      excerpt: excerpt || title.substring(0, 100) + '...',
+      thumbnailUrl: thumbnailUrl || 'https://picsum.photos/seed/' + Math.floor(Math.random() * 1000) + '/800/400',
+      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
     };
     
     console.log('Handling save, id:', id);
