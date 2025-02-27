@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,7 +19,7 @@ export default function BlogEditor() {
   const [excerpt, setExcerpt] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
   const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
-  
+
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
     queryFn: async () => {
@@ -69,13 +68,30 @@ export default function BlogEditor() {
     }
   });
 
+  const createPost = useMutation({ // Assumed mutation for creating new posts
+    mutationFn: async (data: BlogPost) => {
+      const res = await fetch(`/api/admin/blog/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: "Success", description: "Blog post created successfully" });
+      navigate('/blog-management');
+    }
+  });
+
+
   const handleSave = () => {
-    updatePost.mutate({
-      title,
-      content,
-      excerpt,
-      thumbnailUrl
-    });
+    if (id === 'new') {
+      createPost.mutate({ title, content, excerpt, thumbnailUrl });
+    } else {
+      updatePost.mutate({ title, content, excerpt, thumbnailUrl });
+    }
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -110,7 +126,7 @@ export default function BlogEditor() {
               {useHtmlEditor ? "HTML Mode" : "Visual Editor"}
             </Toggle>
           </div>
-          
+
           {useHtmlEditor ? (
             <Textarea
               placeholder="HTML Content"
@@ -161,10 +177,18 @@ export default function BlogEditor() {
             <Button variant="outline" onClick={() => navigate('/blog-management')}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              Save Changes
+            <Button 
+              onClick={handleSave}
+              disabled={updatePost.isPending || createPost.isPending}
+            >
+              {updatePost.isPending || createPost.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
+          {(updatePost.isError || createPost.isError) && (
+            <div className="mt-4 p-4 border border-red-300 bg-red-50 text-red-700 rounded">
+              {updatePost.error?.toString() || createPost.error?.toString() || 'An error occurred while saving'}
+            </div>
+          )}
         </div>
       </Card>
     </div>
