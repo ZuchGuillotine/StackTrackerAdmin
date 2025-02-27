@@ -48,27 +48,34 @@ export default function BlogEditor() {
       
       console.log(`Fetching post with ID: ${numericId}`);
       
-      // Use the correct endpoint for fetching a post by ID
-      const res = await fetch(`/api/blog/${numericId}`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
+      try {
+        // Use the correct endpoint for fetching a post by ID
+        const res = await fetch(`/api/blog/${numericId}`, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          },
+          // Add cache busting to prevent stale data
+          cache: 'no-cache'
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error(`Failed to fetch post: ${errorText}`);
+          throw new Error(`Failed to fetch post: ${errorText}`);
         }
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`Failed to fetch post: ${errorText}`);
-        throw new Error(`Failed to fetch post: ${errorText}`);
+        
+        const data = await res.json();
+        console.log('Fetched post data:', data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching post:', error);
+        throw error;
       }
-      
-      const data = await res.json();
-      console.log('Fetched post data:', data);
-      return data;
     },
     enabled: !!id && id !== 'new',
     refetchOnWindowFocus: false,
-    staleTime: Infinity
+    staleTime: 0 // Don't cache the data
   });
 
   // Separate useEffect to handle initial load vs updates
@@ -80,6 +87,13 @@ export default function BlogEditor() {
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
       setContent(post.content || '');
+      
+      // Make sure TinyMCE gets the content too
+      const editor = window.tinymce?.get('content-editor');
+      if (editor) {
+        editor.setContent(post.content || '');
+      }
+      
       setIsLoaded(true);
     }
   }, [post, isLoaded]);
@@ -289,15 +303,12 @@ export default function BlogEditor() {
                     // This will run when the editor is first initialized
                     console.log("TinyMCE initialized, setting content:", content);
                     
-                    // Set content from state immediately
-                    if (content) {
-                      editor.setContent(content);
-                    }
-                    
-                    // Also set the content if we have a post loaded
+                    // Check both content and post.content, prioritize post.content
                     if (post?.content) {
                       console.log("Setting editor content from post:", post.content);
                       editor.setContent(post.content);
+                    } else if (content) {
+                      editor.setContent(content);
                     }
                   });
                   
@@ -306,6 +317,7 @@ export default function BlogEditor() {
                     const newContent = editor.getContent();
                     if (newContent !== content) {
                       setContent(newContent);
+                      console.log("Updated content state:", newContent);
                     }
                   });
                 }
