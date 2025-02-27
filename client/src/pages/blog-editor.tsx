@@ -30,8 +30,7 @@ export default function BlogEditor() {
     }
   });
 
-  // First fetch all posts
-  const { data: posts = [] } = useQuery<BlogPost[]>({
+  const { data: posts = [], isLoading: isLoadingPosts } = useQuery<BlogPost[]>({
     queryKey: ['/api/blog'],
     queryFn: async () => {
       const res = await fetch('/api/blog');
@@ -40,20 +39,22 @@ export default function BlogEditor() {
     }
   });
 
-  // Then find the specific post we want to edit
+  // Find the specific post we want to edit
   const post = React.useMemo(() => {
     if (!id || id === 'new') return null;
-    return posts.find(p => p.id === parseInt(id));
+    const foundPost = posts.find(p => p.id === parseInt(id));
+    console.log('Found post:', foundPost);
+    return foundPost;
   }, [posts, id]);
 
   // Update form when post data is loaded
   React.useEffect(() => {
     if (post) {
       console.log('Setting form data from post:', post);
-      setTitle(post.title || '');
-      setExcerpt(post.excerpt || '');
-      setThumbnailUrl(post.thumbnailUrl || '');
-      setContent(post.content || '');
+      setTitle(post.title);
+      setExcerpt(post.excerpt);
+      setThumbnailUrl(post.thumbnailUrl);
+      setContent(post.content);
     }
   }, [post]);
 
@@ -65,7 +66,6 @@ export default function BlogEditor() {
         credentials: 'include',
         body: JSON.stringify(data),
       });
-
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -91,7 +91,6 @@ export default function BlogEditor() {
         credentials: 'include',
         body: JSON.stringify(data),
       });
-
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -134,7 +133,8 @@ export default function BlogEditor() {
     }
   };
 
-  if (id !== 'new' && !post) {
+  // Show loading state only when loading posts and it's not a new post
+  if (isLoadingPosts && id !== 'new') {
     return (
       <div className="container mx-auto p-6">
         <Card className="p-6">
