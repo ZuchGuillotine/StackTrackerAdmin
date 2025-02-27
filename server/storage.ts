@@ -30,8 +30,22 @@ export class DbStorage implements IStorage {
   }
 
   async getBlogPostById(id: number): Promise<BlogPost | undefined> {
-    const result = await this.db.select().from(blogPosts).where(eq(blogPosts.id, id));
-    return result[0];
+    console.log(`Storage: Fetching blog post with ID: ${id}`);
+    
+    try {
+      const result = await this.db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+      
+      if (result.length === 0) {
+        console.log(`Storage: No blog post found with ID: ${id}`);
+        return undefined;
+      }
+      
+      console.log(`Storage: Successfully fetched blog post:`, result[0]);
+      return result[0];
+    } catch (error) {
+      console.error(`Storage: Error fetching blog post with ID ${id}:`, error);
+      throw error;
+    }
   }
 
   async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
