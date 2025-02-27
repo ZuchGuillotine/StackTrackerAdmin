@@ -6,7 +6,9 @@ import { Editor } from "@tinymce/tinymce-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { Toggle } from "@/components/ui/toggle";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
@@ -17,6 +19,7 @@ export default function BlogEditor() {
   const [title, setTitle] = React.useState("");
   const [excerpt, setExcerpt] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
+  const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
 
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/blog/${id}`],
@@ -86,26 +89,46 @@ export default function BlogEditor() {
             value={thumbnailUrl}
             onChange={(e) => setThumbnailUrl(e.target.value)}
           />
-          <Editor
-            apiKey="your-tinymce-api-key"
-            value={content}
-            onEditorChange={(content) => setContent(content)}
-            init={{
-              height: 500,
-              menubar: true,
-              plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-                'toc'
-              ],
-              toolbar: 'undo redo | blocks | ' +
-                'bold italic forecolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | image media table | toc | help',
-              content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-            }}
-          />
+          <div className="flex items-center space-x-2 mb-4">
+            <span className="text-sm font-medium">Editor Mode:</span>
+            <Toggle
+              pressed={useHtmlEditor}
+              onPressedChange={setUseHtmlEditor}
+              aria-label="Toggle HTML editor mode"
+            >
+              {useHtmlEditor ? "HTML Mode" : "Visual Editor"}
+            </Toggle>
+          </div>
+          
+          {useHtmlEditor ? (
+            <Textarea
+              placeholder="HTML Content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[500px] font-mono"
+            />
+          ) : (
+            <Editor
+              apiKey="your-tinymce-api-key"
+              value={content}
+              onEditorChange={(content) => setContent(content)}
+              init={{
+                height: 500,
+                menubar: true,
+                plugins: [
+                  'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                  'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
+                  'toc'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                  'bold italic forecolor | alignleft aligncenter ' +
+                  'alignright alignjustify | bullist numlist outdent indent | ' +
+                  'removeformat | image media table | toc | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+              }}
+            />
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => navigate('/blog-management')}>
               Cancel
