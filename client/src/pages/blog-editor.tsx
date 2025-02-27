@@ -11,7 +11,8 @@ import { Toggle } from "@/components/ui/toggle";
 import type { BlogPost } from "@shared/schema";
 
 export default function BlogEditor() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [content, setContent] = React.useState("");
@@ -19,6 +20,9 @@ export default function BlogEditor() {
   const [excerpt, setExcerpt] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
   const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  console.log("Current ID from params:", id);
 
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
@@ -31,16 +35,28 @@ export default function BlogEditor() {
     }
   });
 
-  const { data: post, isLoading } = useQuery<BlogPost>({
-    queryKey: [`/api/blog/${id}`],
+  const { data: post, isLoading, error } = useQuery<BlogPost>({
+    queryKey: [`blog-post-${id}`],
     queryFn: async () => {
       if (id === 'new') return null;
-      console.log(`Fetching post with ID: ${id}`);
-      const res = await fetch(`/api/blog/${id}`);
-      if (!res.ok) {
-        console.error(`Failed to fetch post: ${await res.text()}`);
-        throw new Error('Failed to fetch post');
+      
+      const numericId = parseInt(id);
+      if (isNaN(numericId)) {
+        console.error(`Invalid ID format: ${id}`);
+        throw new Error('Invalid ID format');
       }
+      
+      console.log(`Fetching post with ID: ${numericId}`);
+      
+      // Use the correct endpoint for fetching a post by ID
+      const res = await fetch(`/api/blog/${numericId}`);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Failed to fetch post: ${errorText}`);
+        throw new Error(`Failed to fetch post: ${errorText}`);
+      }
+      
       const data = await res.json();
       console.log('Fetched post data:', data);
       return data;
@@ -50,66 +66,97 @@ export default function BlogEditor() {
     staleTime: Infinity
   });
 
+  // Separate useEffect to handle initial load vs updates
   React.useEffect(() => {
-    console.log('Post data received:', post);
-    if (post) {
-      console.log('Setting form values from post:', post);
+    if (post && !isLoaded) {
+      console.log('Setting initial form values from post:', post);
       
-      // Ensure we set all the form fields with the post data
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
-      
-      // Set content last to ensure it's available for TinyMCE
-      if (post.content) {
-        console.log('Setting content to:', post.content);
-        setContent(post.content);
-        
-        // Force TinyMCE editor to update if it's already initialized
-        const editor = window.tinymce?.get('content-editor');
-        if (editor) {
-          console.log('Updating TinyMCE editor content');
-          editor.setContent(post.content);
-        }
+      setContent(post.content || '');
+      setIsLoaded(true);
+    }
+  }, [post, isLoaded]);
+
+  // This effect runs after TinyMCE is mounted to ensure content is set
+  React.useEffect(() => {
+    if (post && isLoaded) {
+      const editor = window.tinymce?.get('content-editor');
+      if (editor) {
+        console.log('Updating TinyMCE editor content after load');
+        editor.setContent(post.content || '');
       }
     }
-  }, [post]);
+  }, [post, isLoaded]);
 
   const updatePost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
-      // Ensure we have a valid ID
       if (!id || id === 'new') {
         throw new Error('Invalid post ID');
       }
       
-      const res = await fetch(`/api/admin/blog/${id}`, {
+      const numericId = parseInt(id);
+      if (isNaN(numericId)) {
+        throw new Error(`Invalid ID format: ${id}`);
+      }
+      
+      console.log(`Updating post with ID: ${numericId}`, data);
+      
+      const res = await fetch(`/api/admin/blog/${numericId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error(await res.text());
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Update failed: ${errorText}`);
+        throw new Error(errorText);
+      }
+      
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      queryClient.invalidateQueries({ queryKey: [`blog-post-${id}`] });
       toast({ title: "Success", description: "Blog post updated successfully" });
       navigate('/blog-management');
+    },
+    onError: (error) => {
+      console.error('Update post error:', error);
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to update post",
+        variant: "destructive"
+      });
     }
   });
 
   const createPost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
       console.log('Creating new post with data:', data);
+      
       const res = await fetch(`/api/admin/blog`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
+      
       if (!res.ok) {
         const errorText = await res.text();
         console.error('Failed to create post:', errorText);
         throw new Error(errorText);
       }
+      
       return res.json();
     },
     onSuccess: () => {
@@ -126,7 +173,6 @@ export default function BlogEditor() {
       });
     }
   });
-
 
   const handleSave = () => {
     const postData = {
@@ -201,7 +247,7 @@ export default function BlogEditor() {
               id="content-editor"
               apiKey={tinyMceConfig.apiKey}
               initialValue={content || ''}
-              value={content || ''}
+              value={content}
               onEditorChange={(newContent) => {
                 console.log("Editor content changed:", newContent);
                 setContent(newContent);
@@ -221,9 +267,26 @@ export default function BlogEditor() {
                 content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
                 setup: function(editor) {
                   editor.on('init', function() {
+                    // This will run when the editor is first initialized
                     console.log("TinyMCE initialized, setting content:", content);
+                    
+                    // Set content from state immediately
                     if (content) {
                       editor.setContent(content);
+                    }
+                    
+                    // Also set the content if we have a post loaded
+                    if (post?.content) {
+                      console.log("Setting editor content from post:", post.content);
+                      editor.setContent(post.content);
+                    }
+                  });
+                  
+                  // Add change handler to update local state
+                  editor.on('change', function() {
+                    const newContent = editor.getContent();
+                    if (newContent !== content) {
+                      setContent(newContent);
                     }
                   });
                 }
