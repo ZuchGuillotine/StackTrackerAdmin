@@ -97,7 +97,14 @@ export default function BlogManagement() {
                         <div className="flex gap-2">
                           <Button 
                             variant="ghost" 
-                            onClick={() => handleEdit(post.id)}
+                            onClick={() => {
+                              // FIX: Ensure we're using the correct ID format and path
+                              console.log(`Navigating to edit blog post with ID: ${post.id}`);
+                              
+                              // Use the exact route format that matches your App.tsx route
+                              // IMPORTANT: Check that this matches the route in App.tsx!
+                              navigate(`/blog-editor/${post.id}`);
+                            }}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
