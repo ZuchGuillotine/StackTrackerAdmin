@@ -47,6 +47,11 @@ export default function BlogManagement() {
     setPostToDelete(id);
   };
 
+  const handleEdit = (id: number) => {
+    console.log(`Navigating to edit blog post with ID: ${id}`);
+    navigate(`/blog-editor/${id}`);
+  };
+
   return (
     <div className="flex h-screen">
       <DashboardNav />
@@ -92,7 +97,7 @@ export default function BlogManagement() {
                         <div className="flex gap-2">
                           <Button 
                             variant="ghost" 
-                            onClick={() => navigate(`/blog-editor/${post.id}`)}
+                            onClick={() => handleEdit(post.id)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
