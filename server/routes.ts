@@ -43,14 +43,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const numericId = parseInt(idParam);
       if (!isNaN(numericId)) {
         post = await storage.getBlogPostById(numericId);
+        console.log(`Fetched post by ID ${numericId}:`, post);
       }
 
       // If no post found by ID, try slug lookup
       if (!post) {
         post = await storage.getBlogPostBySlug(idParam);
+        console.log(`Fetched post by slug ${idParam}:`, post);
       }
 
       if (!post) {
+        console.log(`Post not found with ID/slug: ${idParam}`);
         return res.status(404).json({ error: "Post not found" });
       }
 
