@@ -35,19 +35,31 @@ export default function BlogEditor() {
     queryKey: [`/api/blog/${id}`],
     queryFn: async () => {
       if (id === 'new') return null;
+      console.log(`Fetching post with ID: ${id}`);
       const res = await fetch(`/api/blog/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch post');
-      return res.json();
+      if (!res.ok) {
+        console.error(`Failed to fetch post: ${await res.text()}`);
+        throw new Error('Failed to fetch post');
+      }
+      const data = await res.json();
+      console.log('Fetched post data:', data);
+      return data;
     },
     enabled: !!id && id !== 'new'
   });
 
   React.useEffect(() => {
+    console.log('Post data received:', post);
+  }, [post]);
+
+  React.useEffect(() => {
     if (post) {
-      setContent(post.content);
-      setTitle(post.title);
-      setExcerpt(post.excerpt);
-      setThumbnailUrl(post.thumbnailUrl);
+      console.log('Setting form values from post:', post);
+      setContent(post.content || '');
+      setTitle(post.title || '');
+      setExcerpt(post.excerpt || '');
+      setThumbnailUrl(post.thumbnailUrl || '');
+      console.log('Form values set:', { content, title, excerpt, thumbnailUrl });
     }
   }, [post]);
 
