@@ -51,12 +51,13 @@ export default function BlogEditor() {
       try {
         // Use the correct endpoint for fetching a post by ID
         const res = await fetch(`/api/blog/${numericId}`, {
+          method: 'GET',
           credentials: 'include',
           headers: {
             'Accept': 'application/json'
           },
           // Add cache busting to prevent stale data
-          cache: 'no-cache'
+          cache: 'no-store'
         });
         
         if (!res.ok) {
@@ -75,14 +76,19 @@ export default function BlogEditor() {
     },
     enabled: !!id && id !== 'new',
     refetchOnWindowFocus: false,
-    staleTime: 0 // Don't cache the data
+    staleTime: 0, // Don't cache the data
+    retry: 1
   });
 
   // Separate useEffect to handle initial load vs updates
   React.useEffect(() => {
-    if (post && !isLoaded) {
+    if (post) {
       console.log('Setting initial form values from post:', post);
       
+      // Reset the isLoaded state first
+      setIsLoaded(false);
+      
+      // Set form values from post data
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
@@ -91,12 +97,13 @@ export default function BlogEditor() {
       // Make sure TinyMCE gets the content too
       const editor = window.tinymce?.get('content-editor');
       if (editor) {
+        console.log('Setting editor content to:', post.content || '');
         editor.setContent(post.content || '');
       }
       
       setIsLoaded(true);
     }
-  }, [post, isLoaded]);
+  }, [post]);
 
   // This effect runs after TinyMCE is mounted to ensure content is set
   React.useEffect(() => {
@@ -122,6 +129,12 @@ export default function BlogEditor() {
       
       console.log(`Updating post with ID: ${numericId}`, data);
       
+      // Include the ID in the data payload
+      const postData = {
+        ...data,
+        id: numericId
+      };
+      
       const res = await fetch(`/api/admin/blog/${numericId}`, {
         method: 'PUT',
         headers: { 
@@ -129,7 +142,7 @@ export default function BlogEditor() {
           'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(data),
+        body: JSON.stringify(postData),
       });
       
       if (!res.ok) {
@@ -301,13 +314,14 @@ export default function BlogEditor() {
                 setup: function(editor) {
                   editor.on('init', function() {
                     // This will run when the editor is first initialized
-                    console.log("TinyMCE initialized, setting content:", content);
+                    console.log("TinyMCE initialized with post data:", post);
                     
-                    // Check both content and post.content, prioritize post.content
+                    // First check if we have post data
                     if (post?.content) {
                       console.log("Setting editor content from post:", post.content);
                       editor.setContent(post.content);
                     } else if (content) {
+                      console.log("Setting editor content from state:", content);
                       editor.setContent(content);
                     }
                   });
