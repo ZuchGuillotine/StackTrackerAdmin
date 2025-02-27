@@ -29,6 +29,16 @@ export class DbStorage implements IStorage {
     return await this.db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
 
+  async getBlogPostById(id: number): Promise<BlogPost | undefined> {
+    const result = await this.db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return result[0];
+  }
+
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const result = await this.db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    return result[0];
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const result = await this.db.select().from(users).where(eq(users.id, id));
     return result[0];
