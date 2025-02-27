@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Editor } from "@tinymce/tinymce-react";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Toggle } from "@/components/ui/toggle";
 import type { BlogPost } from "@shared/schema";
 
@@ -15,67 +15,77 @@ export default function BlogEditor() {
   const id = params?.id;
   const [_, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const editorRef = useRef<any>(null);
   const [content, setContent] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [excerpt, setExcerpt] = React.useState("");
   const [thumbnailUrl, setThumbnailUrl] = React.useState("");
   const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
+  const [isEditorReady, setIsEditorReady] = React.useState(false);
+  const { toast } = useToast();
 
+  // Fetch TinyMCE config
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
     queryFn: async () => {
-      const res = await fetch('/api/config/tinymce');
+      const res = await fetch('/api/config/tinymce', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch TinyMCE config');
       return res.json();
     }
   });
 
+  // Fetch post data if editing existing post
   const { data: post, isLoading: isLoadingPost } = useQuery<BlogPost>({
     queryKey: ['/api/blog', id],
     queryFn: async () => {
       if (!id || id === 'new') return null;
-      const res = await fetch(`/api/blog/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch post');
-      return res.json();
-    },
-    enabled: !!id && id !== 'new'
-  });
-
-  // Update form when post data is loaded
-  React.useEffect(() => {
-    if (post) {
-      setTitle(post.title);
-      setExcerpt(post.excerpt);
-      setThumbnailUrl(post.thumbnailUrl);
-      setContent(post.content);
-    }
-  }, [post]);
-
-  const updatePost = useMutation({
-    mutationFn: async (data: Partial<BlogPost>) => {
-      const res = await fetch(`/api/admin/blog/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      console.log(`Fetching post with ID: ${id}`);
+      const res = await fetch(`/api/blog/${id}`, { 
         credentials: 'include',
-        body: JSON.stringify(data),
+        headers: { 'Cache-Control': 'no-cache' }
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Error fetching post: ${errorText}`);
+        throw new Error(`Failed to fetch post: ${errorText}`);
+      }
+
+      const postData = await res.json();
+      console.log("Received post data:", postData);
+      return postData;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      toast({ title: "Success", description: "Blog post updated successfully" });
-      navigate('/blog-management');
-    },
-    onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "Failed to update post",
-        variant: "destructive"
-      });
-    }
+    enabled: !!id && id !== 'new',
+    retry: 1,
+    staleTime: 0
   });
 
+  // Handle TinyMCE editor initialization
+  const handleEditorInit = (evt: any, editor: any) => {
+    editorRef.current = editor;
+    setIsEditorReady(true);
+  };
+
+  // Update form fields when post data is loaded
+  useEffect(() => {
+    if (post && post.id) {
+      console.log("Setting form data from post:", post);
+      setTitle(post.title || "");
+      setExcerpt(post.excerpt || "");
+      setThumbnailUrl(post.thumbnailUrl || "");
+
+      // Update content state
+      setContent(post.content || "");
+
+      // If editor is already initialized, update its content directly
+      if (isEditorReady && editorRef.current && !useHtmlEditor) {
+        console.log("Setting editor content directly");
+        editorRef.current.setContent(post.content || "");
+      }
+    }
+  }, [post, isEditorReady, useHtmlEditor]);
+
+  // Create new post
   const createPost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
       const res = await fetch('/api/admin/blog', {
@@ -85,12 +95,12 @@ export default function BlogEditor() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
       toast({ title: "Success", description: "Blog post created successfully" });
-      navigate('/blog-management');
+      navigate('/blog');
     },
     onError: (error) => {
       toast({ 
@@ -101,8 +111,41 @@ export default function BlogEditor() {
     }
   });
 
+  // Update existing post
+  const updatePost = useMutation({
+    mutationFn: async (data: Partial<BlogPost>) => {
+      console.log(`Updating post with ID: ${id}`, data);
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
+      toast({ title: "Success", description: "Blog post updated successfully" });
+      navigate('/blog');
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to update post",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSave = () => {
-    if (!title || !content) {
+    // Get content from the editor if in visual mode
+    let currentContent = content;
+    if (!useHtmlEditor && editorRef.current) {
+      currentContent = editorRef.current.getContent();
+    }
+
+    if (!title || !currentContent) {
       toast({ 
         title: "Error", 
         description: "Title and content are required",
@@ -113,7 +156,7 @@ export default function BlogEditor() {
 
     const postData = {
       title,
-      content,
+      content: currentContent,
       excerpt: excerpt || title.substring(0, 100) + '...',
       thumbnailUrl: thumbnailUrl || `https://picsum.photos/seed/${Math.random()}/800/400`,
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -128,18 +171,6 @@ export default function BlogEditor() {
 
   // Show loading state when fetching post data
   if (isLoadingPost) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card className="p-6">
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (isLoadingConfig) {
     return (
       <div className="container mx-auto p-6">
         <Card className="p-6">
@@ -197,7 +228,8 @@ export default function BlogEditor() {
             <Editor
               apiKey={tinyMceConfig.apiKey}
               value={content}
-              onEditorChange={setContent}
+              onInit={handleEditorInit}
+              onEditorChange={(newContent) => setContent(newContent)}
               init={{
                 height: 500,
                 menubar: true,
@@ -210,7 +242,14 @@ export default function BlogEditor() {
                   'bold italic forecolor | alignleft aligncenter ' +
                   'alignright alignjustify | bullist numlist outdent indent | ' +
                   'removeformat | image media table | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                setup: (editor) => {
+                  editor.on('init', () => {
+                    if (post?.content) {
+                      editor.setContent(post.content);
+                    }
+                  });
+                }
               }}
             />
           ) : (
@@ -221,7 +260,7 @@ export default function BlogEditor() {
             </div>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => navigate('/blog-management')}>
+            <Button variant="outline" onClick={() => navigate('/blog')}>
               Cancel
             </Button>
             <Button 
