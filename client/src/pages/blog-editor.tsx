@@ -22,8 +22,6 @@ export default function BlogEditor() {
   const [useHtmlEditor, setUseHtmlEditor] = React.useState(false);
   const [isLoaded, setIsLoaded] = React.useState(false);
 
-  console.log("Current ID from params:", id);
-
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
     queryFn: async () => {
@@ -36,36 +34,33 @@ export default function BlogEditor() {
   });
 
   const { data: post, isLoading, error } = useQuery<BlogPost>({
-    queryKey: [`blog-post-${id}`],
+    queryKey: ['/api/blog', id],
     queryFn: async () => {
       if (id === 'new') return null;
-      
+
       const numericId = parseInt(id);
       if (isNaN(numericId)) {
         console.error(`Invalid ID format: ${id}`);
         throw new Error('Invalid ID format');
       }
-      
+
       console.log(`Fetching post with ID: ${numericId}`);
-      
+
       try {
-        // Use the correct endpoint for fetching a post by ID
         const res = await fetch(`/api/blog/${numericId}`, {
           method: 'GET',
           credentials: 'include',
           headers: {
             'Accept': 'application/json'
-          },
-          // Add cache busting to prevent stale data
-          cache: 'no-store'
+          }
         });
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           console.error(`Failed to fetch post: ${errorText}`);
           throw new Error(`Failed to fetch post: ${errorText}`);
         }
-        
+
         const data = await res.json();
         console.log('Fetched post data:', data);
         return data;
@@ -74,67 +69,40 @@ export default function BlogEditor() {
         throw error;
       }
     },
-    enabled: !!id && id !== 'new',
-    refetchOnWindowFocus: false,
-    staleTime: 0, // Don't cache the data
-    retry: 1
+    enabled: !!id && id !== 'new'
   });
 
-  // Separate useEffect to handle initial load vs updates
+  // Effect to handle initial post data loading
   React.useEffect(() => {
-    if (post) {
+    if (post && !isLoaded) {
       console.log('Setting initial form values from post:', post);
-      
-      // Reset the isLoaded state first
-      setIsLoaded(false);
-      
-      // Set form values from post data
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
       setThumbnailUrl(post.thumbnailUrl || '');
       setContent(post.content || '');
-      
-      // Make sure TinyMCE gets the content too
-      const editor = window.tinymce?.get('content-editor');
-      if (editor) {
-        console.log('Setting editor content to:', post.content || '');
-        editor.setContent(post.content || '');
-      }
-      
       setIsLoaded(true);
     }
   }, [post]);
 
-  // This effect runs after TinyMCE is mounted to ensure content is set
-  React.useEffect(() => {
-    if (post && isLoaded) {
-      const editor = window.tinymce?.get('content-editor');
-      if (editor) {
-        console.log('Updating TinyMCE editor content after load');
-        editor.setContent(post.content || '');
-      }
-    }
-  }, [post, isLoaded]);
 
   const updatePost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
       if (!id || id === 'new') {
         throw new Error('Invalid post ID');
       }
-      
+
       const numericId = parseInt(id);
       if (isNaN(numericId)) {
         throw new Error(`Invalid ID format: ${id}`);
       }
-      
+
       console.log(`Updating post with ID: ${numericId}`, data);
-      
-      // Include the ID in the data payload
+
       const postData = {
         ...data,
         id: numericId
       };
-      
+
       const res = await fetch(`/api/admin/blog/${numericId}`, {
         method: 'PUT',
         headers: { 
@@ -144,18 +112,17 @@ export default function BlogEditor() {
         credentials: 'include',
         body: JSON.stringify(postData),
       });
-      
+
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(`Update failed: ${errorText}`);
         throw new Error(errorText);
       }
-      
+
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/blog'] });
-      queryClient.invalidateQueries({ queryKey: [`blog-post-${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/blog', id] });
       toast({ title: "Success", description: "Blog post updated successfully" });
       navigate('/blog-management');
     },
@@ -172,12 +139,7 @@ export default function BlogEditor() {
   const createPost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
       console.log('Creating new post with data:', data);
-      
-      // Make sure we have a valid slug
-      if (!data.slug && data.title) {
-        data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      }
-      
+
       const res = await fetch(`/api/admin/blog`, {
         method: 'POST',
         headers: { 
@@ -187,13 +149,12 @@ export default function BlogEditor() {
         credentials: 'include',
         body: JSON.stringify(data),
       });
-      
+
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('Failed to create post:', errorText);
         throw new Error(errorText);
       }
-      
+
       return res.json();
     },
     onSuccess: () => {
@@ -212,7 +173,6 @@ export default function BlogEditor() {
   });
 
   const handleSave = () => {
-    // Ensure we have all required fields
     if (!title || !content) {
       toast({ 
         title: "Error", 
@@ -221,7 +181,7 @@ export default function BlogEditor() {
       });
       return;
     }
-    
+
     const postData = {
       title,
       content,
@@ -229,7 +189,7 @@ export default function BlogEditor() {
       thumbnailUrl: thumbnailUrl || 'https://picsum.photos/seed/' + Math.floor(Math.random() * 1000) + '/800/400',
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
     };
-    
+
     console.log('Handling save, id:', id);
     if (id === 'new') {
       createPost.mutate(postData);
@@ -292,7 +252,6 @@ export default function BlogEditor() {
             <Editor
               id="content-editor"
               apiKey={tinyMceConfig.apiKey}
-              initialValue={content || ''}
               value={content}
               onEditorChange={(newContent) => {
                 console.log("Editor content changed:", newContent);
@@ -310,31 +269,7 @@ export default function BlogEditor() {
                   'bold italic forecolor | alignleft aligncenter ' +
                   'alignright alignjustify | bullist numlist outdent indent | ' +
                   'removeformat | image media table | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                setup: function(editor) {
-                  editor.on('init', function() {
-                    // This will run when the editor is first initialized
-                    console.log("TinyMCE initialized with post data:", post);
-                    
-                    // First check if we have post data
-                    if (post?.content) {
-                      console.log("Setting editor content from post:", post.content);
-                      editor.setContent(post.content);
-                    } else if (content) {
-                      console.log("Setting editor content from state:", content);
-                      editor.setContent(content);
-                    }
-                  });
-                  
-                  // Add change handler to update local state
-                  editor.on('change', function() {
-                    const newContent = editor.getContent();
-                    if (newContent !== content) {
-                      setContent(newContent);
-                      console.log("Updated content state:", newContent);
-                    }
-                  });
-                }
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
               }}
             />
           ) : (
