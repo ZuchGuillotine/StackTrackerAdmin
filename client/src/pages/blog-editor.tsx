@@ -61,6 +61,11 @@ export default function BlogEditor() {
 
   const updatePost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
+      // Ensure we have a valid ID
+      if (!id || id === 'new') {
+        throw new Error('Invalid post ID');
+      }
+      
       const res = await fetch(`/api/admin/blog/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

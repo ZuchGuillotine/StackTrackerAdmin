@@ -38,6 +38,41 @@ export class DbStorage implements IStorage {
     const result = await this.db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
     return result[0];
   }
+  
+  async createBlogPost(data: any): Promise<BlogPost> {
+    // Generate slug from title if not provided
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    
+    const result = await this.db.insert(blogPosts).values(data).returning();
+    return result[0];
+  }
+  
+  async updateBlogPost(id: number, data: any): Promise<BlogPost | undefined> {
+    // Generate slug from title if title is provided
+    if (data.title && !data.slug) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    
+    const result = await this.db.update(blogPosts)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteBlogPost(id: number): Promise<boolean> {
+    const result = await this.db.delete(blogPosts)
+      .where(eq(blogPosts.id, id))
+      .returning();
+    
+    return result.length > 0;
+  }
 
   async getUser(id: number): Promise<User | undefined> {
     const result = await this.db.select().from(users).where(eq(users.id, id));
