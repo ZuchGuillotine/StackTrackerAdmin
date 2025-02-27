@@ -30,34 +30,25 @@ export default function BlogEditor() {
     }
   });
 
-  const { data: post, isLoading } = useQuery<BlogPost>({
-    queryKey: ['/api/blog', id],
+  // First fetch all posts
+  const { data: posts = [] } = useQuery<BlogPost[]>({
+    queryKey: ['/api/blog'],
     queryFn: async () => {
-      if (id === 'new') return null;
-
-      const res = await fetch(`/api/blog/${id}`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Failed to fetch post:', errorText);
-        throw new Error(errorText);
-      }
-
+      const res = await fetch('/api/blog');
+      if (!res.ok) throw new Error('Failed to fetch posts');
       return res.json();
-    },
-    enabled: id !== 'new',
-    retry: 1,
-    staleTime: 0
+    }
   });
+
+  // Then find the specific post we want to edit
+  const post = React.useMemo(() => {
+    if (!id || id === 'new') return null;
+    return posts.find(p => p.id === parseInt(id));
+  }, [posts, id]);
 
   // Update form when post data is loaded
   React.useEffect(() => {
-    if (post && Object.keys(post).length > 0) {
+    if (post) {
       console.log('Setting form data from post:', post);
       setTitle(post.title || '');
       setExcerpt(post.excerpt || '');
@@ -70,17 +61,12 @@ export default function BlogEditor() {
     mutationFn: async (data: Partial<BlogPost>) => {
       const res = await fetch(`/api/admin/blog/${id}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     onSuccess: () => {
@@ -101,17 +87,12 @@ export default function BlogEditor() {
     mutationFn: async (data: Partial<BlogPost>) => {
       const res = await fetch('/api/admin/blog', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
+      if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     onSuccess: () => {
@@ -153,7 +134,19 @@ export default function BlogEditor() {
     }
   };
 
-  if (isLoading) {
+  if (id !== 'new' && !post) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoadingConfig) {
     return (
       <div className="container mx-auto p-6">
         <Card className="p-6">
