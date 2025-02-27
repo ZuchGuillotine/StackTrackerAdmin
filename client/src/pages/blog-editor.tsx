@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
+import RouteDebug from "@/components/RouteDebug";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Editor } from "@tinymce/tinymce-react";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,7 @@ export default function BlogEditor() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <RouteDebug />
       <DebugPanel />
       <Card className="p-6">
         <div className="space-y-4">

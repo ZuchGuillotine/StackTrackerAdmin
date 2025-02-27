@@ -18,7 +18,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/blog" component={BlogManagement} />
-      <ProtectedRoute path="/blog-editor/:id" component={BlogEditor} />
+      <ProtectedRoute path="/blog-editor/:id" component={(params) => <BlogEditor key={params.id} />} />
       <ProtectedRoute path="/users" component={UserManagement} />
       <ProtectedRoute path="/reference" component={ReferenceManagement} />
       <Route component={NotFound} />
