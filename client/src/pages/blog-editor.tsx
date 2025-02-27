@@ -30,27 +30,20 @@ export default function BlogEditor() {
     }
   });
 
-  const { data: posts = [], isLoading: isLoadingPosts } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blog'],
+  const { data: post, isLoading: isLoadingPost } = useQuery<BlogPost>({
+    queryKey: ['/api/blog', id],
     queryFn: async () => {
-      const res = await fetch('/api/blog');
-      if (!res.ok) throw new Error('Failed to fetch posts');
+      if (!id || id === 'new') return null;
+      const res = await fetch(`/api/blog/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch post');
       return res.json();
-    }
+    },
+    enabled: !!id && id !== 'new'
   });
-
-  // Find the specific post we want to edit
-  const post = React.useMemo(() => {
-    if (!id || id === 'new') return null;
-    const foundPost = posts.find(p => p.id === parseInt(id));
-    console.log('Found post:', foundPost);
-    return foundPost;
-  }, [posts, id]);
 
   // Update form when post data is loaded
   React.useEffect(() => {
     if (post) {
-      console.log('Setting form data from post:', post);
       setTitle(post.title);
       setExcerpt(post.excerpt);
       setThumbnailUrl(post.thumbnailUrl);
@@ -133,8 +126,8 @@ export default function BlogEditor() {
     }
   };
 
-  // Show loading state only when loading posts and it's not a new post
-  if (isLoadingPosts && id !== 'new') {
+  // Show loading state when fetching post data
+  if (isLoadingPost) {
     return (
       <div className="container mx-auto p-6">
         <Card className="p-6">
