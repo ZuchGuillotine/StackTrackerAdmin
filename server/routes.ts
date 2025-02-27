@@ -36,33 +36,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/blog/:id", async (req, res) => {
     try {
       const idParam = req.params.id;
-      console.log(`Fetching blog post with id param: ${idParam}`);
-      
+      console.log(`Fetching blog post with param: ${idParam}`);
+
       const id = parseInt(idParam);
-      // If it's a number, treat as ID
       if (!isNaN(id)) {
-        console.log(`Fetching blog post by ID: ${id}`);
-        const post = await storage.getBlogPostById(id);
+        const post = await storage.getBlogPostById(id); // Assuming storage.getBlogPostById is adapted to new DB structure
+
         if (!post) {
           console.log(`Post with ID ${id} not found`);
           return res.status(404).json({ error: "Post not found" });
         }
-        console.log(`Found post by ID ${id}:`, post);
+
+        console.log(`Found post:`, post);
         return res.json(post);
-      } 
-      
-      // Otherwise treat as slug
-      console.log(`Fetching blog post by slug: ${idParam}`);
-      const post = await storage.getBlogPostBySlug(idParam);
+      }
+
+      // If not a number, treat as slug
+      const post = await storage.getBlogPostBySlug(idParam); // Assuming storage.getBlogPostBySlug is adapted to new DB structure
+
       if (!post) {
         console.log(`Post with slug ${idParam} not found`);
         return res.status(404).json({ error: "Post not found" });
       }
-      console.log(`Found post by slug ${idParam}:`, post);
+
+      console.log(`Found post:`, post);
       res.json(post);
     } catch (error) {
       console.error("Error fetching post:", error);
-      res.status(500).json({ error: "Failed to fetch post", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to fetch post",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
