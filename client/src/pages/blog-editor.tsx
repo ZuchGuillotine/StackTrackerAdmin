@@ -249,8 +249,70 @@ export default function BlogEditor() {
     );
   }
 
+  // Create a debugging component
+  const DebugPanel = () => {
+    if (process.env.NODE_ENV !== 'development') return null;
+    
+    return (
+      <div className="my-4 p-3 border border-yellow-500 rounded bg-yellow-50 text-xs">
+        <h3 className="font-bold mb-1">Debug Information</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <p><strong>Post ID:</strong> {id}</p>
+            <p><strong>Is New Post:</strong> {isNewPost ? 'Yes' : 'No'}</p>
+            <p><strong>Editor Ready:</strong> {editorInitialized ? 'Yes' : 'No'}</p>
+            <p><strong>Post Loaded:</strong> {postLoaded ? 'Yes' : 'No'}</p>
+            <p><strong>Should Set Content:</strong> {shouldSetEditorContent ? 'Yes' : 'No'}</p>
+          </div>
+          <div>
+            <p><strong>Title:</strong> {title.substring(0, 20)}{title.length > 20 ? '...' : ''}</p>
+            <p><strong>Content Length:</strong> {content?.length || 0} chars</p>
+            <p><strong>HTML Editor:</strong> {useHtmlEditor ? 'Yes' : 'No'}</p>
+            <p><strong>Loading Config:</strong> {isLoadingConfig ? 'Yes' : 'No'}</p>
+            <p><strong>Loading Post:</strong> {isLoadingPost ? 'Yes' : 'No'}</p>
+          </div>
+        </div>
+        <div className="mt-2">
+          <button 
+            className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
+            onClick={() => {
+              console.log("Raw post data:", post);
+              console.log("Editor reference:", editorRef.current);
+              console.log("Current content state:", content);
+              if (editorRef.current) {
+                try {
+                  console.log("Editor content:", editorRef.current.getContent());
+                } catch (e) {
+                  console.error("Error getting editor content:", e);
+                }
+              }
+            }}
+          >
+            Log Debug Info
+          </button>
+          {editorRef.current && (
+            <button 
+              className="ml-2 px-2 py-1 bg-green-500 text-white rounded text-xs"
+              onClick={() => {
+                try {
+                  editorRef.current.setContent(content || "");
+                  console.log("Manually set editor content");
+                } catch (e) {
+                  console.error("Error setting editor content:", e);
+                }
+              }}
+            >
+              Force Set Content
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <DebugPanel />
       <Card className="p-6">
         <div className="space-y-4">
           <Input
