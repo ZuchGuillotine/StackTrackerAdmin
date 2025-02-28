@@ -10,22 +10,19 @@ import BlogManagement from "@/pages/blog-management";
 import UserManagement from "@/pages/user-management";
 import ReferenceManagement from "@/pages/reference-management";
 import BlogEditor from "@/pages/blog-editor";
-import Layout from "@/components/layout";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/auth" component={AuthPage} />
-        <ProtectedRoute path="/" component={Dashboard} />
-        <ProtectedRoute path="/blog" component={BlogManagement} />
-        <ProtectedRoute path="/blog-editor/:id" component={() => <BlogEditor />} />
-        <ProtectedRoute path="/users" component={UserManagement} />
-        <ProtectedRoute path="/reference" component={ReferenceManagement} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/blog" component={BlogManagement} />
+      <ProtectedRoute path="/blog-editor/:id" component={() => <BlogEditor />} />
+      <ProtectedRoute path="/users" component={UserManagement} />
+      <ProtectedRoute path="/reference" component={ReferenceManagement} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
