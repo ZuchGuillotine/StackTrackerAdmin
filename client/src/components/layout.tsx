@@ -2,7 +2,6 @@
 import React from "react";
 import Header from "@/components/header";
 import { useAuth } from "@/hooks/use-auth";
-import { DashboardNav } from "@/components/dashboard-nav";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,10 +16,7 @@ export default function Layout({ children }: LayoutProps) {
       <Header />
       
       <div className="flex flex-1">
-        {isLoggedIn && user?.isAdmin && (
-          <DashboardNav />
-        )}
-        <main className={`flex-1 ${isLoggedIn && user?.isAdmin ? 'p-4' : ''}`}>
+        <main className="flex-1">
           {children}
         </main>
       </div>
