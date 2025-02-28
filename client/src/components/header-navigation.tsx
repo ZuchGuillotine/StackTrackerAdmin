@@ -51,6 +51,12 @@ export function HeaderNavigation() {
               <LearnDropdownItem href="/ask" title="Ask">
                 Ask questions and get answers from our experts
               </LearnDropdownItem>
+              <LearnDropdownItem href="/research" title="Research">
+                Explore scientific research and studies
+              </LearnDropdownItem>
+              <LearnDropdownItem href="/search" title="Search">
+                Find specific information and resources
+              </LearnDropdownItem>
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
