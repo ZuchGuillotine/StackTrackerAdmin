@@ -41,3 +41,23 @@ export type InsertUser = typeof users.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type ReferenceData = typeof referenceData.$inferSelect;
+import { InferSelectModel, relations } from "drizzle-orm";
+import { jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+// Research documents schema
+export const researchDocuments = pgTable("research_documents", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  imageUrls: jsonb("image_urls").default([]),
+  publishedAt: timestamp("published_at", { withTimezone: true }).defaultNow(),
+  authors: text("authors").notNull(),
+  tags: jsonb("tags").default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+});
+
+export type ResearchDocument = InferSelectModel<typeof researchDocuments>;
+export type InsertResearchDocument = Omit<ResearchDocument, "id" | "createdAt" | "updatedAt" | "publishedAt">;

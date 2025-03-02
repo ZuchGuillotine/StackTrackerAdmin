@@ -146,6 +146,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Research Documents API endpoints
+  app.get("/api/research", async (req, res) => {
+    try {
+      const documents = await storage.getResearchDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching research documents:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch research documents",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/research/:id", async (req, res) => {
+    try {
+      const idParam = req.params.id;
+      let document;
+
+      // First try to parse as number for ID lookup
+      const numericId = parseInt(idParam);
+      if (!isNaN(numericId)) {
+        document = await storage.getResearchDocumentById(numericId);
+        console.log(`Fetched research document by ID ${numericId}:`, document);
+      }
+
+      // If no document found by ID, try slug lookup
+      if (!document) {
+        document = await storage.getResearchDocumentBySlug(idParam);
+        console.log(`Fetched research document by slug ${idParam}:`, document);
+      }
+
+      if (!document) {
+        console.log(`Research document not found with ID/slug: ${idParam}`);
+        return res.status(404).json({ error: "Research document not found" });
+      }
+
+      res.json(document);
+    } catch (error) {
+      console.error("Error fetching research document:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch research document",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/admin/research", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const documentData = {
+        title: req.body.title,
+        content: req.body.content,
+        summary: req.body.summary,
+        authors: req.body.authors,
+        imageUrls: req.body.imageUrls || [],
+        tags: req.body.tags || [],
+        slug: req.body.slug || req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      };
+
+      const document = await storage.createResearchDocument(documentData);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating research document:", error);
+      res.status(500).json({ 
+        error: "Failed to create research document",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const documentData = {
+        title: req.body.title,
+        content: req.body.content,
+        summary: req.body.summary,
+        authors: req.body.authors,
+        imageUrls: req.body.imageUrls || [],
+        tags: req.body.tags || [],
+        slug: req.body.slug || req.body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      };
+
+      const document = await storage.updateResearchDocument(id, documentData);
+      if (!document) {
+        return res.status(404).json({ error: "Research document not found" });
+      }
+
+      res.json(document);
+    } catch (error) {
+      console.error("Error updating research document:", error);
+      res.status(500).json({ 
+        error: "Failed to update research document",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/admin/research/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const success = await storage.deleteResearchDocument(id);
+      if (!success) {
+        return res.status(404).json({ error: "Research document not found" });
+      }
+
+      res.json({ message: "Research document deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting research document:", error);
+      res.status(500).json({ 
+        error: "Failed to delete research document",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

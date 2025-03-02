@@ -19,6 +19,8 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/blog" component={BlogManagement} />
       <ProtectedRoute path="/blog-editor/:id" component={() => <BlogEditor />} />
+      <ProtectedRoute path="/research" component={ResearchManagement} />
+      <ProtectedRoute path="/research-editor/:id" component={() => <ResearchEditor />} />
       <ProtectedRoute path="/users" component={UserManagement} />
       <ProtectedRoute path="/reference" component={ReferenceManagement} />
       <Route component={NotFound} />

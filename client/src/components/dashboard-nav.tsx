@@ -8,7 +8,8 @@ import {
   FileText, 
   Users, 
   Database,
-  LogOut 
+  LogOut,
+  FileSearch
 } from "lucide-react";
 
 const items = [
@@ -21,6 +22,11 @@ const items = [
     title: "Blog Management",
     icon: FileText,
     href: "/blog",
+  },
+  {
+    title: "Research",
+    icon: FileSearch,
+    href: "/research",
   },
   {
     title: "User Management",

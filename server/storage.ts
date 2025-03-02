@@ -10,7 +10,7 @@ export interface IStorage {
   getUserByAdminStatus(isAdmin: boolean): Promise<User[]>; // Added function
 }
 
-import { blogPosts, type BlogPost } from "@shared/schema";
+import { blogPosts, type BlogPost, researchDocuments, type ResearchDocument } from "@shared/schema";
 import { desc } from "drizzle-orm";
 
 export class DbStorage implements IStorage {
@@ -106,6 +106,70 @@ export class DbStorage implements IStorage {
   async getUserByAdminStatus(isAdmin: boolean): Promise<User[]> { // Added function implementation
     const result = await this.db.select().from(users).where(users.isAdmin.eq(isAdmin));
     return result;
+  }
+
+  // Research Documents methods
+  async getResearchDocuments(): Promise<ResearchDocument[]> {
+    return await this.db.select().from(researchDocuments).orderBy(desc(researchDocuments.createdAt));
+  }
+
+  async getResearchDocumentById(id: number): Promise<ResearchDocument | undefined> {
+    console.log(`Storage: Fetching research document with ID: ${id}`);
+    
+    try {
+      const result = await this.db.select().from(researchDocuments).where(eq(researchDocuments.id, id)).limit(1);
+      
+      if (result.length === 0) {
+        console.log(`Storage: No research document found with ID: ${id}`);
+        return undefined;
+      }
+      
+      console.log(`Storage: Successfully fetched research document:`, result[0]);
+      return result[0];
+    } catch (error) {
+      console.error(`Storage: Error fetching research document with ID ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getResearchDocumentBySlug(slug: string): Promise<ResearchDocument | undefined> {
+    const result = await this.db.select().from(researchDocuments).where(eq(researchDocuments.slug, slug));
+    return result[0];
+  }
+  
+  async createResearchDocument(data: any): Promise<ResearchDocument> {
+    // Generate slug from title if not provided
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    
+    const result = await this.db.insert(researchDocuments).values(data).returning();
+    return result[0];
+  }
+  
+  async updateResearchDocument(id: number, data: any): Promise<ResearchDocument | undefined> {
+    // Generate slug from title if title is provided
+    if (data.title && !data.slug) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+    
+    const result = await this.db.update(researchDocuments)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(researchDocuments.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteResearchDocument(id: number): Promise<boolean> {
+    const result = await this.db.delete(researchDocuments)
+      .where(eq(researchDocuments.id, id))
+      .returning();
+    
+    return result.length > 0;
   }
 }
 
