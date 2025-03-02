@@ -10,6 +10,8 @@ import BlogManagement from "@/pages/blog-management";
 import UserManagement from "@/pages/user-management";
 import ReferenceManagement from "@/pages/reference-management";
 import BlogEditor from "@/pages/blog-editor";
+import ResearchManagement from "@/pages/research-management"; // Added import
+import ResearchEditor from "@/pages/research-editor";       // Added import
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
