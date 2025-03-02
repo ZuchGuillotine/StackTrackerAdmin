@@ -40,6 +40,7 @@ export default function ResearchEditor() {
   const [newTag, setNewTag] = useState("");
   const [fileUpload, setFileUpload] = useState<File | null>(null); // Add state for file upload
   const [fileUrl, setFileUrl] = useState<string | null>(null); // Add state for file URL
+  const [thumbnailUrl, setThumbnailUrl] = useState(""); // Added state for thumbnail URL
 
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
@@ -88,6 +89,7 @@ export default function ResearchEditor() {
       setImageUrls(Array.isArray(document.imageUrls) ? document.imageUrls : []);
       setTags(Array.isArray(document.tags) ? document.tags : []);
       setFileUrl(document.fileUrl || null); // Set file URL if available
+      setThumbnailUrl(document.thumbnailUrl || ""); // Set thumbnail URL if available
       // Force re-render TinyMCE editor with new content
       setEditorKey(Date.now());
     }
@@ -382,8 +384,10 @@ export default function ResearchEditor() {
                 plugins: [
                   'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                   'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                  'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                  'insertdatetime', 'media', 'table', 'help', 'wordcount', 'paste'
                 ],
+                paste_data_images: true,
+                drag_drop_paste: true,
                 toolbar: 'undo redo | blocks | ' +
                   'bold italic forecolor | alignleft aligncenter ' +
                   'alignright alignjustify | bullist numlist outdent indent | ' +
