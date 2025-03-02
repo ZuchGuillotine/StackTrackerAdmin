@@ -2,8 +2,15 @@ import express, { type Request, Response, Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import cors from "cors";
+import multer from "multer";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
+
+// Set up multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(cors({

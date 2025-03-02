@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import RouteDebug from "@/components/RouteDebug";
@@ -19,7 +18,7 @@ export default function ResearchEditor() {
   const [location] = useLocation();
   const urlParts = location.split('/');
   const id = urlParts[urlParts.length - 1];
-  
+
   // Keep original params for debugging
   const params = useParams<{ id: string }>();
   console.log("PARAMS DEBUG:", params, "ID from URL:", id);
@@ -39,6 +38,8 @@ export default function ResearchEditor() {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+  const [fileUpload, setFileUpload] = useState<File | null>(null); // Add state for file upload
+  const [fileUrl, setFileUrl] = useState<string | null>(null); // Add state for file URL
 
   const { data: tinyMceConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ['/api/config/tinymce'],
@@ -86,6 +87,7 @@ export default function ResearchEditor() {
       setContent(document.content || "");
       setImageUrls(Array.isArray(document.imageUrls) ? document.imageUrls : []);
       setTags(Array.isArray(document.tags) ? document.tags : []);
+      setFileUrl(document.fileUrl || null); // Set file URL if available
       // Force re-render TinyMCE editor with new content
       setEditorKey(Date.now());
     }
@@ -317,6 +319,35 @@ export default function ResearchEditor() {
             </div>
           </div>
 
+          <Input
+            placeholder="Thumbnail URL"
+            value={thumbnailUrl}
+            onChange={(e) => setThumbnailUrl(e.target.value)}
+          />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Document File</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setFileUpload(e.target.files[0]);
+                  }
+                }}
+                accept=".pdf,.doc,.docx,.txt"
+              />
+              {fileUrl && (
+                <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
+                  View Current File
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Upload PDFs or other document formats for large research papers
+            </p>
+          </div>
+
           <div className="flex items-center space-x-2 mb-4 pt-4">
             <span className="text-sm font-medium">Editor Mode:</span>
             <Toggle
@@ -363,10 +394,10 @@ export default function ResearchEditor() {
                     // For this example, we're just using a direct URL
                     // In a production environment, you would upload to your server
                     const imageUrl = URL.createObjectURL(blobInfo.blob());
-                    
+
                     // Add to our image URLs array
                     setImageUrls(prev => [...prev, imageUrl]);
-                    
+
                     // Resolve with the image URL
                     resolve(imageUrl);
                   });
