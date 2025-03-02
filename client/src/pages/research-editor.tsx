@@ -280,46 +280,97 @@ export default function ResearchEditor() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Images</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              {imageUrls.map((url, index) => (
-                <div key={index} className="relative group border rounded-md overflow-hidden">
-                  <img 
-                    src={url} 
-                    alt={`Research image ${index + 1}`} 
-                    className="w-full h-40 object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x300?text=Image+Error";
-                    }}
-                  />
-                  <button 
-                    onClick={() => removeImageUrl(url)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Image URL"
+          <div className="space-y-4 my-4">
+            <div className="flex items-center space-x-2">
+              <Input 
+                placeholder="Add image URL"
                 value={newImageUrl}
                 onChange={(e) => setNewImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addImageUrl();
+              />
+              <Button 
+                type="button" 
+                onClick={() => {
+                  if (newImageUrl) {
+                    setImageUrls([...imageUrls, newImageUrl]);
+                    setNewImageUrl("");
                   }
                 }}
-              />
-              <Button type="button" onClick={addImageUrl} variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
+                size="sm"
+              >
                 Add Image
               </Button>
             </div>
+
+            <div 
+              className="border-2 border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  Array.from(e.dataTransfer.files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                      const imageUrl = URL.createObjectURL(file);
+                      setImageUrls(prev => [...prev, imageUrl]);
+                    }
+                  });
+
+                  toast({
+                    title: "Images uploaded",
+                    description: `${e.dataTransfer.files.length} image(s) added successfully`,
+                  });
+                }
+              }}
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                  const files = (e.target as HTMLInputElement).files;
+                  if (files && files.length > 0) {
+                    const newUrls = Array.from(files).map(file => URL.createObjectURL(file));
+                    setImageUrls(prev => [...prev, ...newUrls]);
+                  }
+                };
+                input.click();
+              }}
+            >
+              <Upload className="h-8 w-8 text-gray-400 mb-1" />
+              <p className="text-sm text-gray-500">Drag and drop or click to upload images</p>
+            </div>
           </div>
+
+          {imageUrls.length > 0 && (
+            <div className="space-y-2 my-4">
+              <p className="text-sm font-medium">Images:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={url} 
+                      alt={`Image ${index + 1}`}
+                      className="h-24 object-cover w-full rounded-md"
+                    />
+                    <button
+                      className="absolute top-1 right-1 bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => {
+                        const newUrls = [...imageUrls];
+                        newUrls.splice(index, 1);
+                        setImageUrls(newUrls);
+                      }}
+                    >
+                      <X className="h-3 w-3 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Input
             placeholder="Thumbnail URL"
