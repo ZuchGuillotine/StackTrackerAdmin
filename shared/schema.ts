@@ -53,7 +53,7 @@ export const researchDocuments = pgTable("research_documents", {
   content: text("content").notNull(),
   imageUrls: jsonb("image_urls").default([]),
   publishedAt: timestamp("published_at", { withTimezone: true }).defaultNow(),
-  authors: text("authors").notNull(),
+  authors: text("authors"), // Removed .notNull() to make it optional
   tags: jsonb("tags").default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()

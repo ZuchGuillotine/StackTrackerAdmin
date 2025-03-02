@@ -165,10 +165,10 @@ export default function ResearchEditor() {
   });
 
   const handleSave = () => {
-    if (!title || !content || !authors || !summary) {
+    if (!title || !content || !summary) {
       toast({ 
         title: "Error", 
-        description: "Title, content, authors, and summary are required",
+        description: "Title, content, and summary are required",
         variant: "destructive"
       });
       return;
