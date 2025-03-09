@@ -108,6 +108,11 @@ export class DbStorage implements IStorage {
     return result;
   }
 
+  async getUsers(): Promise<User[]> {
+    const result = await this.db.select().from(users);
+    return result;
+  }
+
   // Research Documents methods
   async getResearchDocuments(): Promise<ResearchDocument[]> {
     return await this.db.select().from(researchDocuments).orderBy(desc(researchDocuments.createdAt));

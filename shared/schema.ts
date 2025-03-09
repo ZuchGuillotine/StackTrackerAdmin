@@ -7,7 +7,10 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  email: text("email").unique(),
+  name: text("name"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  isPro: boolean("is_pro").default(false),
 });
 
 export const blogPosts = pgTable("blog_posts", {

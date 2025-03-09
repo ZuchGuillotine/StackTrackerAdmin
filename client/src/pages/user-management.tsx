@@ -34,12 +34,18 @@ interface User {
   id: number;
   username: string;
   isAdmin: boolean;
+  email?: string;
+  isPro?: boolean;
+  name?: string;
 }
 
 interface UserFormData {
   username: string;
   password: string;
   isAdmin: boolean;
+  email?: string;
+  name?: string;
+  isPro?: boolean;
 }
 
 async function fetchUsers(): Promise<User[]> {
@@ -58,7 +64,10 @@ export default function UserManagement() {
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     password: '',
-    isAdmin: false
+    isAdmin: false,
+    email: '',
+    name: '',
+    isPro: false
   });
 
   const { data: users, isLoading } = useQuery({
@@ -151,7 +160,10 @@ export default function UserManagement() {
     setFormData({
       username: user.username,
       password: '', // Don't set password when editing
-      isAdmin: user.isAdmin
+      isAdmin: user.isAdmin,
+      email: user.email || '',
+      name: user.name || '',
+      isPro: user.isPro || false
     });
     setUserFormOpen(true);
   };
@@ -159,7 +171,14 @@ export default function UserManagement() {
   const closeForm = () => {
     setUserFormOpen(false);
     setUserToEdit(null);
-    setFormData({ username: '', password: '', isAdmin: false });
+    setFormData({ 
+      username: '', 
+      password: '', 
+      isAdmin: false,
+      email: '',
+      name: '',
+      isPro: false
+    });
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -169,7 +188,10 @@ export default function UserManagement() {
       // When editing, only include password if it's not empty
       const userData: Partial<UserFormData> = {
         username: formData.username,
-        isAdmin: formData.isAdmin
+        isAdmin: formData.isAdmin,
+        email: formData.email,
+        name: formData.name,
+        isPro: formData.isPro
       };
       
       if (formData.password) {
@@ -214,7 +236,10 @@ export default function UserManagement() {
                   <TableRow>
                     <TableHead>ID</TableHead>
                     <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Subscription</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -223,9 +248,16 @@ export default function UserManagement() {
                     <TableRow key={user.id}>
                       <TableCell>{user.id}</TableCell>
                       <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email || "N/A"}</TableCell>
+                      <TableCell>{user.name || "N/A"}</TableCell>
                       <TableCell>
                         <Badge variant={user.isAdmin ? 'destructive' : 'secondary'}>
                           {user.isAdmin ? 'Admin' : 'User'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.isPro ? 'default' : 'outline'}>
+                          {user.isPro ? 'Pro' : 'Free'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -274,6 +306,29 @@ export default function UserManagement() {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="password" className="text-right">
                   Password
                 </Label>
@@ -304,6 +359,26 @@ export default function UserManagement() {
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     Grant admin privileges
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="isPro" className="text-right">
+                  Pro Status
+                </Label>
+                <div className="col-span-3 flex items-center space-x-2">
+                  <Checkbox
+                    id="isPro"
+                    checked={formData.isPro}
+                    onCheckedChange={(checked) => 
+                      setFormData({...formData, isPro: checked === true})
+                    }
+                  />
+                  <label
+                    htmlFor="isPro"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Pro subscription
                   </label>
                 </div>
               </div>
