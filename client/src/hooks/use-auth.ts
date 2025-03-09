@@ -1,20 +1,15 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
-import axios from '@/lib/api';
-import { useMutation } from '@tanstack/react-query';
-
-interface User {
-  id: number;
-  username: string;
-  isAdmin: boolean;
-}
+import { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { User } from "@shared/schema";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: Error | null;
-  loginMutation: ReturnType<typeof useMutation>;
-  logout: () => void;
+  loginMutation: ReturnType<typeof useMutation<any, Error, { username: string; password: string }>>;
+  logoutMutation: ReturnType<typeof useMutation>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -23,6 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
@@ -39,14 +35,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const logout = async () => {
-    try {
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
       await axios.post('/api/logout', {}, { withCredentials: true });
+    },
+    onSuccess: () => {
       setUser(null);
-    } catch (error) {
+    },
+    onError: (error: Error) => {
       console.error('Logout failed', error);
-    }
-  };
+    },
+  });
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -69,7 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, loginMutation, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        error,
+        loginMutation,
+        logoutMutation
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -77,8 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
