@@ -10,9 +10,9 @@ import Dashboard from './pages/dashboard';
 import UserManagement from './pages/user-management';
 import BlogManagement from './pages/blog-management';
 import BlogEditor from './pages/blog-editor';
-import ResearchManagement from './pages/research-management';
-import ResearchEditor from './pages/research-editor';
-import NoMatch from './pages/NoMatch';
+import ResearchManagement from "./pages/research-management";
+import ResearchEditor from "./pages/research-editor";
+import NoMatch from "./pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: {
