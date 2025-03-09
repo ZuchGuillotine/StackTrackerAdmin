@@ -7,7 +7,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  getUserByAdminStatus(isAdmin: boolean): Promise<User[]>; // Added function
+  getUserByAdminStatus(isAdmin: boolean): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 }
 
 import { blogPosts, type BlogPost, researchDocuments, type ResearchDocument } from "@shared/schema";
@@ -28,6 +31,45 @@ export class DbStorage implements IStorage {
   async getBlogPosts(): Promise<BlogPost[]> {
     return await this.db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
+  
+  async getUser(id: number): Promise<User | undefined> {
+    const results = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return results[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const results = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+    return results[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await this.db.select().from(users).orderBy(users.username);
+  }
+
+  async getUserByAdminStatus(isAdmin: boolean): Promise<User[]> {
+    return await this.db.select().from(users).where(eq(users.isAdmin, isAdmin));
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const results = await this.db.insert(users).values(user).returning();
+    return results[0];
+  }
+
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const results = await this.db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const results = await this.db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning({ id: users.id });
+    return results.length > 0;
 
   async getBlogPostById(id: number): Promise<BlogPost | undefined> {
     console.log(`Storage: Fetching blog post with ID: ${id}`);

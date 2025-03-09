@@ -42,3 +42,62 @@ function App() {
 }
 
 export default App;
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Users from './pages/Users';
+import BlogPosts from './pages/BlogPosts';
+import BlogPostEditor from './pages/BlogPostEditor';
+import ResearchDocuments from './pages/ResearchDocuments';
+import ResearchDocumentEditor from './pages/ResearchDocumentEditor';
+import Layout from './components/Layout';
+import theme from './theme';
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  return <>{children}</>;
+};
+
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="blog" element={<BlogPosts />} />
+              <Route path="blog/new" element={<BlogPostEditor />} />
+              <Route path="blog/:id" element={<BlogPostEditor />} />
+              <Route path="research" element={<ResearchDocuments />} />
+              <Route path="research/new" element={<ResearchDocumentEditor />} />
+              <Route path="research/:id" element={<ResearchDocumentEditor />} />
+              <Route path="users" element={<Users />} />
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

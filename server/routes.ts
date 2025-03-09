@@ -153,6 +153,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // User Management API endpoints
+  app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch users",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      // Filter out sensitive or auto-generated fields
+      const userData = {
+        username: req.body.username,
+        password: await hashPassword(req.body.password),
+        isAdmin: req.body.isAdmin || false,
+      };
+
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ 
+        error: "Failed to create user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      // Filter out sensitive or auto-generated fields
+      const userData = {
+        username: req.body.username,
+        isAdmin: req.body.isAdmin,
+      };
+
+      // Add password only if it's provided
+      if (req.body.password) {
+        userData.password = await hashPassword(req.body.password);
+      }
+
+      const user = await storage.updateUser(id, userData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ 
+        error: "Failed to update user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ 
+        error: "Failed to delete user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Research Documents API endpoints
   app.get("/api/research", async (req, res) => {
     try {
