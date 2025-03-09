@@ -1,6 +1,5 @@
 import { Route, Switch } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import Layout from "@/components/layout";
@@ -75,7 +74,6 @@ function App() {
           <Toaster />
         </AuthProvider>
       </ThemeProvider>
-      {import.meta.env.DEV && <ReactQueryDevtools />}
     </QueryClientProvider>
   );
 }
