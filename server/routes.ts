@@ -4,7 +4,9 @@ import { setupAuth } from "./auth";
 import cors from "cors";
 import multer from "multer";
 import { storage } from "./storage";
-import { insertBlogPostSchema } from "@shared/schema";
+import { insertBlogPostSchema, supplementReference } from "@shared/schema"; // Added import for supplementReference
+import { db } from "./db"; // Added import for db
+
 
 // Set up multer for file uploads
 const upload = multer({ 
@@ -402,6 +404,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supplements CRUD
+
+  // Create a simple supplement service
+  const supplementService = {
+    initialize: async () => {
+      try {
+        console.log("Initializing supplement service...");
+        // This would typically load data into memory or perform other initialization
+        const supplements = await db.select().from(supplementReference);
+        console.log(`Loaded ${supplements.length} supplements`);
+        return supplements;
+      } catch (error) {
+        console.error("Error initializing supplement service:", error);
+        throw error;
+      }
+    }
+  };
+
   app.post("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
     try {
       const [newSupplement] = await db
@@ -483,6 +503,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supplements CRUD
+
+  app.get("/api/supplements/search", async (req, res) => {
+    try {
+      // Implement supplement search logic here using supplementService if needed
+      res.json([]); // Return empty array for now. Replace with actual search results
+    } catch (error) {
+      console.error("Error searching supplements:", error);
+      res.status(500).json({ error: "Failed to search supplements" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

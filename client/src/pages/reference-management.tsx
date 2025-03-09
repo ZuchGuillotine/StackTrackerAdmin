@@ -51,9 +51,17 @@ const supplementFormSchema = z.object({
 type SupplementFormData = z.infer<typeof supplementFormSchema>;
 
 async function fetchSupplements(): Promise<SupplementReference[]> {
-  const res = await fetch('/api/admin/supplements', { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to fetch supplements');
-  return res.json();
+  try {
+    const res = await fetch('/api/admin/supplements', { credentials: 'include' });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Failed to fetch supplements: ${errorText}`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching supplements:", error);
+    throw error;
+  }
 }
 
 export default function ReferenceManagement() {

@@ -39,11 +39,21 @@ export const referenceData = pgTable("reference_data", {
 
 export const insertReferenceDataSchema = createInsertSchema(referenceData);
 
+// Supplement reference table
+export const supplementReference = pgTable("supplement_reference", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
 export type ReferenceData = typeof referenceData.$inferSelect;
+export type SupplementReference = typeof supplementReference.$inferSelect;
 import { InferSelectModel, relations } from "drizzle-orm";
 import { jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
