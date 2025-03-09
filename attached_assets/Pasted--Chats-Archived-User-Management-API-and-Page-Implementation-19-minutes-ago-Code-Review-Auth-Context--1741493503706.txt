@@ -1,0 +1,35 @@
+
+Chats
+Archived
+User Management API and Page Implementation
+19 minutes ago
+Code Review Auth Context Provider Fix
+38 minutes ago
+Admin Dashboard User Management Setup
+1 hour ago
+Support Request Resolved Successfully
+7 days ago
+Learn Dropdown Menu Updated with Research Links
+8 days ago
+Code changes for blog management edit button
+10 days ago
+Code Changes Logging Blog Post Route
+10 days ago
+curl request to localhost blog api
+10 days ago
+blog post editor features brainstorming session
+11 days ago
+blog admin integration existing application
+19 days ago
+dev guidelines admin dashboard progress summary
+19 days ago
+I apologize, but it seems like the message is incomplete. Could you provide the full information that you want to be included in the dev_guidelines.md document? Without the complete details, I cannot help you create the guidelines or start implementing the steps. A suggested title for this conversation could be: admin dashboard dev guidelines setup
+19 days ago
+@server/auth.ts @server/routes.ts@client/src/pages/blog-management.tsx@client/src/pages/user-management.tsx@client/src/App.tsx
+
+This application functions as an admin dashboard for another application, where admins can fetch data from tables in the other application and perform CRUD functions in GUI. The auth-page and authorization is handled by the users table from the database, users who are admin on the other application are allowed auth here. The blog and research admin features here are functioning properly. We have a page for user-management. We need to fetch data from the same database under the users table, and allow CRUD operations using the page user-managment. We need to ensure we can read/write using the API and visibly see all the user data, but not unhashed passwords.
+KEEP THESE THINGS IN MIND:
+
+Use the existing user-management page.
+Study the existing auth functionality and DO NOT disrupt it
+Study the existing database connection methods that allow CRUD for the other tables in this application. Keep these in mind when building funcionality for user-management.
