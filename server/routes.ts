@@ -5,6 +5,9 @@ import cors from "cors";
 import multer from "multer";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
+import passport from "passport";
+import { hashPassword } from "./utils";
+
 
 // Set up multer for file uploads
 const upload = multer({ 
@@ -387,6 +390,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ error: 'Authentication failed', details: err.message });
+      }
+
+      if (!user) {
+        console.log('Login failed:', info?.message || 'Invalid credentials');
+        return res.status(401).json({ error: info?.message || 'Invalid credentials' });
+      }
+
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Session creation error:', loginErr);
+          return res.status(500).json({ error: 'Failed to create session' });
+        }
+
+        console.log(`User ${user.username} logged in successfully with isAdmin=${user.isAdmin}`);
+        return res.status(200).json(user);
+      });
+    })(req, res, next);
+  });
+
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      console.log('User not authenticated when accessing /api/user');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    console.log(`Current authenticated user: ${req.user?.username} (isAdmin=${req.user?.isAdmin})`);
+    res.json(req.user);
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

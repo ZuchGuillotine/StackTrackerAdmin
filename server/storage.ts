@@ -31,15 +31,27 @@ export class DbStorage implements IStorage {
   async getBlogPosts(): Promise<BlogPost[]> {
     return await this.db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
   }
-  
+
   async getUser(id: number): Promise<User | undefined> {
     const results = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     return results[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const results = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
-    return results[0];
+    try {
+      const results = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+
+      if (results.length === 0) {
+        console.log(`User '${username}' not found in database`);
+        return undefined;
+      }
+
+      console.log(`User '${username}' found in database with isAdmin=${results[0].isAdmin}`);
+      return results[0];
+    } catch (error) {
+      console.error(`Error fetching user '${username}' from database:`, error);
+      throw error;
+    }
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -74,15 +86,15 @@ export class DbStorage implements IStorage {
 
   async getBlogPostById(id: number): Promise<BlogPost | undefined> {
     console.log(`Storage: Fetching blog post with ID: ${id}`);
-    
+
     try {
       const result = await this.db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
-      
+
       if (result.length === 0) {
         console.log(`Storage: No blog post found with ID: ${id}`);
         return undefined;
       }
-      
+
       console.log(`Storage: Successfully fetched blog post:`, result[0]);
       return result[0];
     } catch (error) {
@@ -95,23 +107,23 @@ export class DbStorage implements IStorage {
     const result = await this.db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
     return result[0];
   }
-  
+
   async createBlogPost(data: any): Promise<BlogPost> {
     // Generate slug from title if not provided
     if (!data.slug && data.title) {
       data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     }
-    
+
     const result = await this.db.insert(blogPosts).values(data).returning();
     return result[0];
   }
-  
+
   async updateBlogPost(id: number, data: any): Promise<BlogPost | undefined> {
     // Generate slug from title if title is provided
     if (data.title && !data.slug) {
       data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     }
-    
+
     const result = await this.db.update(blogPosts)
       .set({
         ...data,
@@ -119,15 +131,15 @@ export class DbStorage implements IStorage {
       })
       .where(eq(blogPosts.id, id))
       .returning();
-    
+
     return result[0];
   }
-  
+
   async deleteBlogPost(id: number): Promise<boolean> {
     const result = await this.db.delete(blogPosts)
       .where(eq(blogPosts.id, id))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -136,17 +148,13 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await this.db.select().from(users).where(eq(users.username, username));
-    return result[0];
-  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await this.db.insert(users).values(insertUser).returning();
     return result[0];
   }
 
-  async getUserByAdminStatus(isAdmin: boolean): Promise<User[]> { // Added function implementation
+  async getUserByAdminStatus(isAdmin: boolean): Promise<User[]> { 
     const result = await this.db.select().from(users).where(users.isAdmin.eq(isAdmin));
     return result;
   }
@@ -158,15 +166,15 @@ export class DbStorage implements IStorage {
 
   async getResearchDocumentById(id: number): Promise<ResearchDocument | undefined> {
     console.log(`Storage: Fetching research document with ID: ${id}`);
-    
+
     try {
       const result = await this.db.select().from(researchDocuments).where(eq(researchDocuments.id, id)).limit(1);
-      
+
       if (result.length === 0) {
         console.log(`Storage: No research document found with ID: ${id}`);
         return undefined;
       }
-      
+
       console.log(`Storage: Successfully fetched research document:`, result[0]);
       return result[0];
     } catch (error) {
@@ -179,23 +187,23 @@ export class DbStorage implements IStorage {
     const result = await this.db.select().from(researchDocuments).where(eq(researchDocuments.slug, slug));
     return result[0];
   }
-  
+
   async createResearchDocument(data: any): Promise<ResearchDocument> {
     // Generate slug from title if not provided
     if (!data.slug && data.title) {
       data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     }
-    
+
     const result = await this.db.insert(researchDocuments).values(data).returning();
     return result[0];
   }
-  
+
   async updateResearchDocument(id: number, data: any): Promise<ResearchDocument | undefined> {
     // Generate slug from title if title is provided
     if (data.title && !data.slug) {
       data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     }
-    
+
     const result = await this.db.update(researchDocuments)
       .set({
         ...data,
@@ -203,15 +211,15 @@ export class DbStorage implements IStorage {
       })
       .where(eq(researchDocuments.id, id))
       .returning();
-    
+
     return result[0];
   }
-  
+
   async deleteResearchDocument(id: number): Promise<boolean> {
     const result = await this.db.delete(researchDocuments)
       .where(eq(researchDocuments.id, id))
       .returning();
-    
+
     return result.length > 0;
   }
 }

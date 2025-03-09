@@ -43,14 +43,30 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } 
-      if (!user.isAdmin) {
-        return done(null, false, { message: 'Insufficient privileges' });
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user) {
+          console.log(`Authentication failed: User '${username}' not found`);
+          return done(null, false, { message: 'Invalid username or password' });
+        }
+        
+        const passwordValid = await comparePasswords(password, user.password);
+        if (!passwordValid) {
+          console.log(`Authentication failed: Invalid password for user '${username}'`);
+          return done(null, false, { message: 'Invalid username or password' });
+        }
+
+        if (!user.isAdmin) {
+          console.log(`Authentication failed: User '${username}' is not an admin`);
+          return done(null, false, { message: 'Admin privileges required' });
+        }
+
+        console.log(`User '${username}' authenticated successfully with admin privileges`);
+        return done(null, user);
+      } catch (error) {
+        console.error('Authentication error:', error);
+        return done(error);
       }
-      return done(null, user);
     }),
   );
 
