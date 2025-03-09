@@ -4,8 +4,8 @@ import { setupAuth } from "./auth";
 import cors from "cors";
 import multer from "multer";
 import { storage } from "./storage";
-import { insertBlogPostSchema, supplementReference } from "@shared/schema"; // Added import for supplementReference
-import { db } from "./db"; // Added import for db
+import { insertBlogPostSchema, supplementReference } from "@shared/schema";
+import { db } from "./db";
 
 
 // Set up multer for file uploads
@@ -424,10 +424,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
     try {
-      const [newSupplement] = await db
-        .insert(supplementReference)
-        .values(req.body)
-        .returning();
+      const newSupplement = await storage.createSupplementReference({
+        name: req.body.name,
+        category: req.body.category
+      });
 
       // Reinitialize the supplement service to include the new supplement
       await supplementService.initialize();
@@ -435,7 +435,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(newSupplement);
     } catch (error) {
       console.error("Error creating supplement reference:", error);
-      res.status(500).send("Failed to create supplement reference");
+      res.status(500).json({
+        error: "Failed to create supplement reference",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

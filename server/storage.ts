@@ -1,9 +1,10 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { users, type User, type InsertUser, supplementReference, type SupplementReference } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
 
 export interface IStorage {
+</old_str>
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -176,6 +177,57 @@ export class DbStorage implements IStorage {
     
     return result.length > 0;
   }
+
+  // Supplement Reference methods
+  async getSupplementReferences(): Promise<SupplementReference[]> {
+    console.log("Storage: Fetching all supplement references");
+    return await this.db.select().from(supplementReference).orderBy(supplementReference.name);
+  }
+
+  async getSupplementReferenceById(id: number): Promise<SupplementReference | undefined> {
+    console.log(`Storage: Fetching supplement reference with ID: ${id}`);
+    
+    try {
+      const result = await this.db.select().from(supplementReference).where(eq(supplementReference.id, id)).limit(1);
+      
+      if (result.length === 0) {
+        console.log(`Storage: No supplement reference found with ID: ${id}`);
+        return undefined;
+      }
+      
+      console.log(`Storage: Successfully fetched supplement reference:`, result[0]);
+      return result[0];
+    } catch (error) {
+      console.error(`Storage: Error fetching supplement reference with ID ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async createSupplementReference(data: { name: string; category: string }): Promise<SupplementReference> {
+    const result = await this.db.insert(supplementReference).values(data).returning();
+    return result[0];
+  }
+  
+  async updateSupplementReference(id: number, data: { name: string; category: string }): Promise<SupplementReference | undefined> {
+    const result = await this.db.update(supplementReference)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(supplementReference.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async deleteSupplementReference(id: number): Promise<boolean> {
+    const result = await this.db.delete(supplementReference)
+      .where(eq(supplementReference.id, id))
+      .returning();
+    
+    return result.length > 0;
+  }
 }
 
 export const storage = new DbStorage();
+</old_str>
