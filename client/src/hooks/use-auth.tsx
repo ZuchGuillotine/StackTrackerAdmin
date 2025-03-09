@@ -1,10 +1,15 @@
 
-import { createContext, useContext, useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import { apiRequest } from "@/lib/queryClient";
-import { toast } from "@/components/ui/use-toast";
-import { User } from "@shared/schema";
+import { createContext, useContext, useEffect, useState } from 'react';
+import axios from 'axios';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/api';
+
+interface User {
+  id: number;
+  username: string;
+  isAdmin: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
