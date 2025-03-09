@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast"; //Corrected import path
 
 interface User {
   id: number;
@@ -115,7 +114,7 @@ export default function UserManagement() {
           isAdmin: formData.isAdmin,
           ...(formData.password ? { password: formData.password } : {})
         };
-        
+
         await axios.put(`/api/admin/users/${currentUser.id}`, userData);
         toast({
           title: "Success",
@@ -129,7 +128,7 @@ export default function UserManagement() {
           description: "User created successfully",
         });
       }
-      
+
       handleCloseDialog();
       queryClient.invalidateQueries({ queryKey: ['users'] });
     } catch (err) {
@@ -140,7 +139,7 @@ export default function UserManagement() {
 
   const handleDelete = async () => {
     if (!currentUser) return;
-    
+
     try {
       await axios.delete(`/api/admin/users/${currentUser.id}`);
       toast({
@@ -169,7 +168,7 @@ export default function UserManagement() {
             <Plus className="h-4 w-4 mr-2" /> Add User
           </Button>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Users</CardTitle>
@@ -230,13 +229,13 @@ export default function UserManagement() {
             <DialogHeader>
               <DialogTitle>{currentUser ? 'Edit User' : 'Add User'}</DialogTitle>
             </DialogHeader>
-            
+
             {errors && (
               <Alert className="bg-destructive/15 text-destructive">
                 <AlertDescription>{errors}</AlertDescription>
               </Alert>
             )}
-            
+
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
@@ -247,7 +246,7 @@ export default function UserManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="password">
                   Password {currentUser && <span className="text-muted-foreground text-sm">(leave blank to keep unchanged)</span>}
@@ -260,7 +259,7 @@ export default function UserManagement() {
                   onChange={handleInputChange}
                 />
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="isAdmin"
@@ -273,7 +272,7 @@ export default function UserManagement() {
                 <Label htmlFor="isAdmin">Administrator</Label>
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit}>{currentUser ? 'Update' : 'Create'}</Button>
