@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import Layout from "@/components/layout";
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
-import Login from './pages/Login';
+import Login from './pages/auth-page';
 import Dashboard from './pages/dashboard';
 import UserManagement from './pages/user-management';
 import BlogManagement from './pages/blog-management';
