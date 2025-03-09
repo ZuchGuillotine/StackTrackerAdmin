@@ -70,6 +70,7 @@ export class DbStorage implements IStorage {
       .where(eq(users.id, id))
       .returning({ id: users.id });
     return results.length > 0;
+  }
 
   async getBlogPostById(id: number): Promise<BlogPost | undefined> {
     console.log(`Storage: Fetching blog post with ID: ${id}`);

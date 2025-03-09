@@ -25,3 +25,9 @@ export async function fetchReferenceData(): Promise<ReferenceData[]> {
   if (!res.ok) throw new Error("Failed to fetch reference data");
   return res.json();
 }
+import axios from 'axios';
+
+export async function fetchUsers() {
+  const response = await axios.get('/api/admin/users');
+  return response.data;
+}
