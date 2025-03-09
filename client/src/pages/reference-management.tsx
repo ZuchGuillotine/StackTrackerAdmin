@@ -67,7 +67,6 @@ async function fetchSupplements(): Promise<SupplementReference[]> {
     throw error;
   }
 }
-</old_str>
 
 export default function ReferenceManagement() {
   const { toast } = useToast();
