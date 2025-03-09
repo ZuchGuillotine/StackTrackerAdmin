@@ -153,6 +153,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // User Management API endpoints
+  app.get("/api/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // Don't return user passwords in the response
+      const safeUsers = users.map(user => ({
+        ...user,
+        password: undefined
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch users",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Don't return the user's password
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.post("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userData = {
+        username: req.body.username,
+        password: req.body.password, // This will be hashed in storage.createUser
+        isAdmin: !!req.body.isAdmin,
+      };
+
+      const user = await storage.createUser(userData);
+      // Don't return the password in the response
+      const { password, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ 
+        error: "Failed to create user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const userData: any = {
+        username: req.body.username,
+        isAdmin: !!req.body.isAdmin,
+      };
+      
+      // Only update password if provided
+      if (req.body.password) {
+        userData.password = req.body.password;
+      }
+
+      const user = await storage.updateUser(id, userData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Don't return the password in the response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ 
+        error: "Failed to update user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      // Prevent deleting your own account
+      if (req.user && req.user.id === id) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ 
+        error: "Failed to delete user",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Research Documents API endpoints
   app.get("/api/research", async (req, res) => {
     try {
