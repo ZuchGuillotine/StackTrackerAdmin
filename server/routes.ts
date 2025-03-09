@@ -442,6 +442,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET all supplement references
+  app.get("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const supplements = await storage.getSupplementReferences();
+      console.log(`Retrieved ${supplements.length} supplement references`);
+      res.json(supplements);
+    } catch (error) {
+      console.error("Error fetching supplement references:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch supplement references",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.put("/api/admin/supplements/:id", requireAuth, requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

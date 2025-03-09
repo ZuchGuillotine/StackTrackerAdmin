@@ -1,14 +1,20 @@
+
 import { users, type User, type InsertUser, supplementReference, type SupplementReference } from "@shared/schema";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
 
 export interface IStorage {
-</old_str>
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getUserByAdminStatus(isAdmin: boolean): Promise<User[]>; // Added function
+  getUsers(): Promise<User[]>;
+  getSupplementReferences(): Promise<SupplementReference[]>;
+  getSupplementReferenceById(id: number): Promise<SupplementReference | undefined>;
+  createSupplementReference(data: { name: string; category: string }): Promise<SupplementReference>;
+  updateSupplementReference(id: number, data: { name: string; category: string }): Promise<SupplementReference | undefined>;
+  deleteSupplementReference(id: number): Promise<boolean>;
 }
 
 import { blogPosts, type BlogPost, researchDocuments, type ResearchDocument } from "@shared/schema";
@@ -230,4 +236,3 @@ export class DbStorage implements IStorage {
 }
 
 export const storage = new DbStorage();
-</old_str>
