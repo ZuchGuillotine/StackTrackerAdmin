@@ -1,60 +1,69 @@
+import { createContext, ReactNode, useContext } from "react";
+import {
+  useQuery,
+  useMutation,
+  UseMutationResult,
+} from "@tanstack/react-query";
+import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
+import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import axios from 'axios';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/api';
-
-interface User {
-  id: number;
-  username: string;
-  isAdmin: boolean;
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
+type AuthContextType = {
+  user: SelectUser | null;
+  isLoading: boolean;
   error: Error | null;
-  loginMutation: ReturnType<typeof useMutation<any, Error, { username: string; password: string }>>;
-  logoutMutation: ReturnType<typeof useMutation>;
-  registerMutation: ReturnType<typeof useMutation>;
-}
+  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
+  logoutMutation: UseMutationResult<void, Error, void>;
+  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+};
 
-const AuthContext = createContext<AuthContextType | null>(null);
+type LoginData = Pick<InsertUser, "username" | "password">;
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const queryClient = useQueryClient();
+export const AuthContext = createContext<AuthContextType | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
+  const {
+    data: user,
+    error,
+    isLoading,
+  } = useQuery<SelectUser | undefined, Error>({
+    queryKey: ["/api/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await axios.post('/api/login', credentials, { withCredentials: true });
-      return response.data;
+    mutationFn: async (credentials: LoginData) => {
+      const res = await apiRequest("POST", "/api/login", credentials);
+      return await res.json();
     },
-    onSuccess: (userData) => {
-      setUser(userData);
-      setError(null);
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {
-      setError(error);
-      setUser(null);
+      toast({
+        title: "Login failed",
+        description: error.message === 'Insufficient privileges' 
+          ? 'Only admin users can access this dashboard' 
+          : 'Invalid username or password',
+        variant: "destructive",
+      });
     },
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await axios.post('/api/register', credentials, { withCredentials: true });
-      return response.data;
+    mutationFn: async (credentials: InsertUser) => {
+      const res = await apiRequest("POST", "/api/register", credentials);
+      return await res.json();
     },
-    onSuccess: (userData) => {
-      setUser(userData);
-      setError(null);
+    onSuccess: (user: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], user);
     },
     onError: (error: Error) => {
-      setError(error);
-      setUser(null);
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -64,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
-      setUser(null);
     },
     onError: (error: Error) => {
       toast({
@@ -75,32 +83,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await axios.get('/api/user', { withCredentials: true });
-        setUser(response.data);
-        setError(null);
-      } catch (err) {
-        console.log('Not authenticated or error fetching user', err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCurrentUser();
-  }, []);
-
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      error,
-      loginMutation,
-      logoutMutation,
-      registerMutation
-    }}>
+    <AuthContext.Provider
+      value={{
+        user: user ?? null,
+        isLoading,
+        error,
+        loginMutation,
+        logoutMutation,
+        registerMutation,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
