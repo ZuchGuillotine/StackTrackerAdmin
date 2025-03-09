@@ -50,14 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        setLoading(true);
         const response = await axios.get('/api/user', { withCredentials: true });
         setUser(response.data);
-      } catch (error) {
-        // If user is not authenticated, the 401 error is expected
-        if (axios.isAxiosError(error) && error.response?.status !== 401) {
-          console.error('Error fetching current user:', error);
-        }
+        setError(null);
+      } catch (err) {
+        console.log('Not authenticated or error fetching user', err);
         setUser(null);
       } finally {
         setLoading(false);
