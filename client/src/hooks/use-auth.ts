@@ -24,7 +24,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const queryClient = useQueryClient();
 
@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      setUser(null);
     },
     onError: (error: Error) => {
       toast({
@@ -94,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user: user ?? null,
-        loading: isLoading,
+        user,
+        loading,
         error,
         loginMutation,
         logoutMutation,
