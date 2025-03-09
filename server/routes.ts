@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: req.body.username,
         isAdmin: !!req.body.isAdmin,
       };
-      
+
       // Only update password if provided
       if (req.body.password) {
         userData.password = req.body.password;
@@ -401,6 +401,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  app.post("/api/admin/supplements", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const [newSupplement] = await db
+        .insert(supplementReference)
+        .values(req.body)
+        .returning();
+
+      // Reinitialize the supplement service to include the new supplement
+      await supplementService.initialize();
+
+      res.json(newSupplement);
+    } catch (error) {
+      console.error("Error creating supplement reference:", error);
+      res.status(500).send("Failed to create supplement reference");
+    }
+  });
+
+  app.put("/api/admin/supplements/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const [updated] = await db
+        .update(supplementReference)
+        .set({
+          name: req.body.name,
+          category: req.body.category,
+          updatedAt: new Date()
+        })
+        .where(eq(supplementReference.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "Supplement reference not found" });
+      }
+
+      // Reinitialize the supplement service to include the updated supplement
+      await supplementService.initialize();
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating supplement reference:", error);
+      res.status(500).json({ 
+        error: "Failed to update supplement reference",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/admin/supplements/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+
+      const deleted = await db
+        .delete(supplementReference)
+        .where(eq(supplementReference.id, id))
+        .returning();
+
+      if (!deleted || deleted.length === 0) {
+        return res.status(404).json({ error: "Supplement reference not found" });
+      }
+
+      // Reinitialize the supplement service after deletion
+      await supplementService.initialize();
+
+      res.json({ message: "Supplement reference deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting supplement reference:", error);
+      res.status(500).json({ 
+        error: "Failed to delete supplement reference",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Supplements CRUD
 
   const httpServer = createServer(app);
   return httpServer;
